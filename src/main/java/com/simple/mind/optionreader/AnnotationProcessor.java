@@ -99,8 +99,9 @@ public class AnnotationProcessor {
 				throw new Exception("Making a variable optional and having default value is confusing. Class member: "
 						+ f.getName());
 			}
+
 			// check if ignorable and has default value
-			if (isIgnorable(o) && o != null && o.defaultValues() != null) {
+			if (isIgnorable(o) && o != null && o.defaultValues() != null && o.defaultValues().length != 0) {
 				throw new Exception("Making a variable ignorable and having default value is confusing. Class member: "
 						+ f.getName());
 			}

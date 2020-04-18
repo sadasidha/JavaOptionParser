@@ -1,10 +1,4 @@
-# Command Option Parser for Java
-
-> All the functions are written in a way where it either successfully executes or just throw exception. These includes validation. If invalid parameter or options are available function will throw exception. 
-
-## Usage Example:
-
-```java
+package com.simple.mind.optionreader.example;
 
 import java.util.ArrayList;
 
@@ -30,22 +24,3 @@ public class Example {
 		System.out.println("Debug Value: " + a.debug);
 	}
 }
-
-```
-### Execution
-
-```sh
- java -classpath "$(pwd)/target/*" com.simple.mind.optionreader.example.Example --fileNames  name.json --fileNames[ "phone.json" ] --fileNames-2 "address.json" "email-address.json" --file_names "additional.json"
-```
-
-### Result
-
-```
-Print all files
-> name.json
-> phone.json
-> address.json
-> email-address.json
-> additional.json
-Debug Value: false
-```

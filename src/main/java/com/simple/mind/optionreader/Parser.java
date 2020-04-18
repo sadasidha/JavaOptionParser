@@ -14,7 +14,7 @@ public class Parser {
 	public static HashMap<String, ArrayList<String>> processArgs(String[] args) throws Exception {
 		HashMap<String, ArrayList<String>> map = new HashMap<String, ArrayList<String>>();
 		for (int i = 0; i < args.length; i++) {
-			if (!args[i].matches("^[a-zA-Z0-9-_]+$")) {
+			if (!args[i].matches("^[a-zA-Z0-9-_]+[\\[]{0,1}$")) {
 				throw new Exception(
 						"Parameter name should not contain any non alpha numeric or non hyphen or non underscore characetr. Found: " + args[i]);
 			}
@@ -48,7 +48,7 @@ public class Parser {
 				Matcher matcher = pattern.matcher(args[i]);
 				String optionName;
 				if (matcher.matches()) {
-					optionName = formatName(matcher.group(1).toLowerCase());
+					optionName = formatName(matcher.group(1));
 				} else {
 					throw new Exception("Bad input");
 				}
@@ -74,7 +74,7 @@ public class Parser {
 				 * --debug
 				 */
 				if (args.length <= i + 1 || args[i + 1].matches("^--.+$")) {
-					String optionName = formatName(args[i]).toLowerCase();
+					String optionName = formatName(args[i]);
 					// boolean found
 					// optionName
 					ArrayList<String> l = map.get(optionName);
@@ -86,7 +86,7 @@ public class Parser {
 					l.add("true");
 				} else {
 					// next value belongs
-					String optionName = formatName(args[i]).toLowerCase();
+					String optionName = formatName(args[i]);
 					ArrayList<String> l = map.get(optionName);
 					if (l == null) {
 						l = new ArrayList<String>();

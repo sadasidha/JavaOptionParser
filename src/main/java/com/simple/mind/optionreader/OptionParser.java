@@ -20,10 +20,18 @@ import java.util.List;
 public class OptionParser<T> {
 	private static HashMap<String, ArrayList<String>> map;
 
-	public static <T> T ReadOptionNoException(String[] args, Class<T> c) {
+	/**
+	 * Parse arguments, do not throw exception; print the exception on console.
+	 * 
+	 * @param <T>
+	 * @param args
+	 * @param c
+	 * @return
+	 */
+	public static <T> T ReadOptionNE(String[] args, Class<T> c) {
 		T obj = null;
 		try {
-			obj = ReadOption(args, c);
+			obj = ParseOption(args, c);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -37,7 +45,7 @@ public class OptionParser<T> {
 	 * @return: Returns Object of class
 	 * @throws Exception: Throws Exception
 	 */
-	public static <T> T ReadOption(String[] args, Class<T> c) throws Exception {
+	public static <T> T ParseOption(String[] args, Class<T> c) throws Exception {
 		map = Parser.processArgs(args);
 		return prepareObject(c);
 	}
@@ -97,7 +105,7 @@ public class OptionParser<T> {
 		return toRet;
 	}
 
-	private static <T> void handleNonArray(T object, Field f) throws Exception {
+	private static <T> void handleNonArray(T obj, Field f) throws Exception {
 		ArrayList<String> values = getValues(getOptionNames(f));
 
 		if (values == null || values.size() == 0) {
@@ -114,61 +122,88 @@ public class OptionParser<T> {
 		String value = values.get(0);
 		boolean isPr = f.getType().isPrimitive();
 		if (f.getType().equals(Integer.TYPE) || f.getType().isAssignableFrom(Integer.class)) {
+			boolean b = f.canAccess(obj);
+			f.setAccessible(true);
 			if (isPr)
-				f.setInt(object, (int) convertToInt(value));
+				f.setInt(obj, (int) convertToInt(value));
 			else
-				f.set(object, convertToInt(value));
+				f.set(obj, convertToInt(value));
+			f.setAccessible(b);
 			return;
 		}
 		if (f.getType().equals(Long.TYPE) || f.getType().isAssignableFrom(Long.class)) {
+			boolean b = f.canAccess(obj);
+			f.setAccessible(true);
 			if (isPr)
-				f.setLong(object, (long) convertToLong(value));
+				f.setLong(obj, (long) convertToLong(value));
 			else
-				f.setLong(object, convertToLong(value));
+				f.setLong(obj, convertToLong(value));
+			f.setAccessible(b);
 			return;
 		}
 		if (f.getType().isAssignableFrom(String.class)) {
-			f.set(object, value);
+			boolean b = f.canAccess(obj);
+			f.setAccessible(true);
+			f.set(obj, value);
+			f.setAccessible(b);
 			return;
 		}
 
 		if (f.getType().isAssignableFrom(BigInteger.class)) {
-			f.set(object, ParseNumericValue.convertToBigInt(value));
+			boolean b = f.canAccess(obj);
+			f.setAccessible(true);
+			f.set(obj, ParseNumericValue.convertToBigInt(value));
+			f.setAccessible(b);
 			return;
 		}
 		if (f.getType().equals(Character.TYPE) || f.getType().isAssignableFrom(Character.class)) {
+			boolean b = f.canAccess(obj);
+			f.setAccessible(true);
 			if (isPr)
-				f.setChar(object, (char) convertToChar(value));
+				f.setChar(obj, (char) convertToChar(value));
 			else
-				f.setChar(object, convertToChar(value));
+				f.setChar(obj, convertToChar(value));
+			f.setAccessible(b);
 			return;
 		}
 		if (f.getType().equals(Byte.TYPE) || f.getType().isAssignableFrom(Byte.class)) {
+			boolean b = f.canAccess(obj);
+			f.setAccessible(true);
 			if (isPr)
-				f.setByte(object, (byte) convertToByte(value));
+				f.setByte(obj, (byte) convertToByte(value));
 			else
-				f.setByte(object, convertToByte(value));
+				f.setByte(obj, convertToByte(value));
+			f.setAccessible(b);
 			return;
 		}
 		if (f.getType().equals(Double.TYPE) || f.getType().isAssignableFrom(Double.class)) {
+			boolean b = f.canAccess(obj);
+			f.setAccessible(true);
 			if (isPr)
-				f.setDouble(object, (double) convertToDouble(value));
+				f.setDouble(obj, (double) convertToDouble(value));
 			else
-				f.setDouble(object, convertToDouble(value));
+				f.setDouble(obj, convertToDouble(value));
+			f.setAccessible(b);
 			return;
 		}
 		if (f.getType().equals(Float.TYPE) || f.getType().isAssignableFrom(Float.class)) {
+			boolean b = f.canAccess(obj);
+			f.setAccessible(true);
 			if (isPr)
-				f.setDouble(object, (float) convertToFloat(value));
+				f.setDouble(obj, (float) convertToFloat(value));
 			else
-				f.setDouble(object, convertToFloat(value));
+				f.setDouble(obj, convertToFloat(value));
+			f.setAccessible(b);
 			return;
 		}
 		if (f.getType().equals(Boolean.TYPE) || f.getType().isAssignableFrom(Boolean.class)) {
+			boolean b = f.canAccess(obj);
+			f.setAccessible(true);
 			if (isPr)
-				f.setBoolean(object, (boolean) convertToBoolean(value));
+				f.setBoolean(obj, (boolean) convertToBoolean(value));
 			else
-				f.setBoolean(object, convertToBoolean(value));
+				f.setBoolean(obj, convertToBoolean(value));
+			f.setAccessible(b);
 			return;
 		}
 	}
@@ -214,7 +249,10 @@ public class OptionParser<T> {
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToInt(valArr.get(i));
 				}
+				boolean b = f.canAccess(obj);
+				f.setAccessible(true);
 				f.set(obj, intArr);
+				f.setAccessible(b);
 				return;
 			}
 			if (primitiveType.compareTo("java.lang.Integer") == 0) {
@@ -230,7 +268,10 @@ public class OptionParser<T> {
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToLong(valArr.get(i));
 				}
+				boolean b = f.canAccess(obj);
+				f.setAccessible(true);
 				f.set(obj, intArr);
+				f.setAccessible(b);
 				return;
 			}
 			if (primitiveType.compareTo("java.lang.Long") == 0) {
@@ -238,7 +279,10 @@ public class OptionParser<T> {
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToLong(valArr.get(i));
 				}
+				boolean b = f.canAccess(obj);
+				f.setAccessible(true);
 				f.set(obj, intArr);
+				f.setAccessible(b);
 				return;
 			}
 			if (primitiveType.compareTo("byte") == 0) {
@@ -246,7 +290,10 @@ public class OptionParser<T> {
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToByte(valArr.get(i));
 				}
+				boolean b = f.canAccess(obj);
+				f.setAccessible(true);
 				f.set(obj, intArr);
+				f.setAccessible(b);
 				return;
 			}
 			if (primitiveType.compareTo("java.lang.Byte") == 0) {
@@ -254,7 +301,10 @@ public class OptionParser<T> {
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToByte(valArr.get(i));
 				}
+				boolean b = f.canAccess(obj);
+				f.setAccessible(true);
 				f.set(obj, intArr);
+				f.setAccessible(b);
 				return;
 			}
 			if (primitiveType.compareTo("char") == 0) {
@@ -262,7 +312,10 @@ public class OptionParser<T> {
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToChar(valArr.get(i));
 				}
+				boolean b = f.canAccess(obj);
+				f.setAccessible(true);
 				f.set(obj, intArr);
+				f.setAccessible(b);
 				return;
 			}
 			if (primitiveType.compareTo("java.lang.Character") == 0) {
@@ -270,7 +323,10 @@ public class OptionParser<T> {
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToChar(valArr.get(i));
 				}
+				boolean b = f.canAccess(obj);
+				f.setAccessible(true);
 				f.set(obj, intArr);
+				f.setAccessible(b);
 				return;
 			}
 			if (primitiveType.compareTo("float") == 0) {
@@ -286,7 +342,10 @@ public class OptionParser<T> {
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToFloat(valArr.get(i));
 				}
+				boolean b = f.canAccess(obj);
+				f.setAccessible(true);
 				f.set(obj, intArr);
+				f.setAccessible(b);
 				return;
 			}
 			if (primitiveType.compareTo("double") == 0) {
@@ -294,7 +353,10 @@ public class OptionParser<T> {
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToDouble(valArr.get(i));
 				}
+				boolean b = f.canAccess(obj);
+				f.setAccessible(true);
 				f.set(obj, intArr);
+				f.setAccessible(b);
 				return;
 			}
 			if (primitiveType.compareTo("java.lang.Double") == 0) {
@@ -302,7 +364,10 @@ public class OptionParser<T> {
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToDouble(valArr.get(i));
 				}
+				boolean b = f.canAccess(obj);
+				f.setAccessible(true);
 				f.set(obj, intArr);
+				f.setAccessible(b);
 				return;
 			}
 			if (primitiveType.compareTo("boolean") == 0) {
@@ -310,7 +375,10 @@ public class OptionParser<T> {
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToBoolean(valArr.get(i));
 				}
+				boolean b = f.canAccess(obj);
+				f.setAccessible(true);
 				f.set(obj, intArr);
+				f.setAccessible(b);
 				return;
 			}
 			if (primitiveType.compareTo("java.lang.Boolean") == 0) {
@@ -318,7 +386,10 @@ public class OptionParser<T> {
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToBoolean(valArr.get(i));
 				}
+				boolean b = f.canAccess(obj);
+				f.setAccessible(true);
 				f.set(obj, intArr);
+				f.setAccessible(b);
 				return;
 			}
 			if (primitiveType.compareTo("java.lang.String") == 0) {
@@ -326,7 +397,10 @@ public class OptionParser<T> {
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = valArr.get(i);
 				}
+				boolean b = f.canAccess(obj);
+				f.setAccessible(true);
 				f.set(obj, intArr);
+				f.setAccessible(b);
 				return;
 			}
 			if (primitiveType.compareTo("java.math.BigInteger") == 0) {
@@ -334,7 +408,10 @@ public class OptionParser<T> {
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = ParseNumericValue.convertToBigInt(valArr.get(i));
 				}
+				boolean b = f.canAccess(obj);
+				f.setAccessible(true);
 				f.set(obj, intArr);
+				f.setAccessible(b);
 				return;
 			}
 		} else if (AcceptableList.listTypes.contains(primitiveType)) {
@@ -345,7 +422,10 @@ public class OptionParser<T> {
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr.add(convertToInt(valArr.get(i)));
 				}
+				boolean b = f.canAccess(obj);
+				f.setAccessible(true);
 				f.set(obj, intArr);
+				f.setAccessible(b);
 				return;
 			}
 			if (type.compareTo("java.lang.Long") == 0) {
@@ -353,7 +433,10 @@ public class OptionParser<T> {
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr.add(convertToLong(valArr.get(i)));
 				}
+				boolean b = f.canAccess(obj);
+				f.setAccessible(true);
 				f.set(obj, intArr);
+				f.setAccessible(b);
 				return;
 			}
 
@@ -363,6 +446,10 @@ public class OptionParser<T> {
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr.add(convertToByte(valArr.get(i)));
 				}
+				boolean b = f.canAccess(obj);
+				f.setAccessible(true);
+				f.set(obj, intArr);
+				f.setAccessible(b);
 				return;
 			}
 			if (type.compareTo("java.lang.Character") == 0) {
@@ -370,7 +457,10 @@ public class OptionParser<T> {
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr.add(convertToChar(valArr.get(i)));
 				}
+				boolean b = f.canAccess(obj);
+				f.setAccessible(true);
 				f.set(obj, intArr);
+				f.setAccessible(b);
 				return;
 			}
 			if (type.compareTo("java.lang.Float") == 0) {
@@ -378,7 +468,10 @@ public class OptionParser<T> {
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr.add(convertToFloat(valArr.get(i)));
 				}
+				boolean b = f.canAccess(obj);
+				f.setAccessible(true);
 				f.set(obj, intArr);
+				f.setAccessible(b);
 				return;
 			}
 			if (type.compareTo("java.lang.Double") == 0) {
@@ -386,11 +479,17 @@ public class OptionParser<T> {
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr.add(convertToDouble(valArr.get(i)));
 				}
+				boolean b = f.canAccess(obj);
+				f.setAccessible(true);
 				f.set(obj, intArr);
+				f.setAccessible(b);
 				return;
 			}
 			if (type.compareTo("java.lang.String") == 0) {
+				boolean b = f.canAccess(obj);
+				f.setAccessible(true);
 				f.set(obj, valArr);
+				f.setAccessible(b);
 				return;
 			}
 
@@ -399,7 +498,10 @@ public class OptionParser<T> {
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr.add(Boolean.valueOf(valArr.get(i)));
 				}
+				boolean b = f.canAccess(obj);
+				f.setAccessible(true);
 				f.set(obj, intArr);
+				f.setAccessible(b);
 				return;
 			}
 			if (primitiveType.compareTo("java.math.BigInteger") == 0) {
@@ -407,7 +509,10 @@ public class OptionParser<T> {
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr.add(ParseNumericValue.convertToBigInt(valArr.get(i)));
 				}
+				boolean b = f.canAccess(obj);
+				f.setAccessible(true);
 				f.set(obj, intArr);
+				f.setAccessible(b);
 				return;
 			}
 		}
