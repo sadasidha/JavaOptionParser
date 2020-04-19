@@ -44,14 +44,23 @@ public class AppTest extends TestCase {
 
 	public void testValidArgs() {
 		try {
-			String[] args = new String[] { "--file_names[", "file-one", "file-two", "]", "--debug", "--in", "10",
-					"--fileNames-3", "file-three", "file-four", "file-v", "--debug2", "--books", "blue" };
+			String[] args = new String[] { //
+					"--file_names[", "file-one", "file-two", "]", //
+					"--debug", //
+					"--in", "10", //
+					"--fileNames-3", "file-three", "file-four", "file-v", //
+					"--debug2", //
+					"--books", "blue", //
+					"--b", "true" //
+			}; //
+
 			Arguments ar = OptionsParser.ParseOption(args, Arguments.class);
 			assertEquals(ar.d2bug, true);
 			assertEquals(ar.debug, true);
 			assertEquals(ar.fileNames.size(), 5);
-			assertEquals(ar.b.size(), 1);
-			assertEquals(ar.b.get(0), "blue");
+			assertEquals(ar.b.size(), 2);
+			assertTrue(ar.b.contains("blue"));
+			assertTrue(ar.b.contains("true"));
 		} catch (Exception e) {
 			fail("Should not be here");
 		}

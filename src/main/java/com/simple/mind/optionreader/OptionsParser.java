@@ -232,7 +232,7 @@ public class OptionsParser<T> {
 
 		// I do not expect valArr to be null
 		if (valArr.size() == 0 && AnnotationProcessor.isOptional(f) == false
-				&& !AnnotationProcessor.isHasDefaultValue(f)) {
+				&& !AnnotationProcessor.hasDefaultValue(f)) {
 			throw new Exception(f.getName()
 					+ " is not optional, does not have default values and no value is passed through command line");
 		} else if (valArr == null || valArr.size() == 0) {

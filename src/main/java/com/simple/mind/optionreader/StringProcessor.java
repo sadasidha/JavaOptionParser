@@ -25,18 +25,11 @@ public class StringProcessor {
 			toRet.length = Integer.valueOf(matcher.group(2));
 			return toRet;
 		}
-		// look for minor
-		matcher = Pattern.compile("^(-.)-?([0-9]+)$").matcher(s);
-		if (matcher.matches()) {
-			toRet.name = matcher.group(1);
-			toRet.length = Integer.valueOf(matcher.group(2));
-			return toRet;
-		}
 		throw new Exception("Invalid Pattarn");
 	}
 
 	public static String stripHyphen(String s) {
-		Pattern p = Pattern.compile("^([-]{1,2})");
+		Pattern p = Pattern.compile("^([-]{2})");
 		Matcher m = p.matcher(s);
 		if (m.find()) {
 			s = m.replaceFirst(""); // number 46

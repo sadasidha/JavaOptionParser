@@ -62,7 +62,7 @@ public class AnnotationProcessor {
 		return false;
 	}
 
-	public static boolean isHasDefaultValue(Field f) {
+	public static boolean hasDefaultValue(Field f) {
 		Options o = f.getAnnotation(Options.class);
 		if (o == null)
 			return false;
@@ -99,7 +99,7 @@ public class AnnotationProcessor {
 		for (Field f : fields) {
 			Options o = f.getAnnotation(Options.class);
 			// check if optional and has default value
-			if (isOptional(f) && o != null && isHasDefaultValue(f)) {
+			if (isOptional(f) && o != null && hasDefaultValue(f)) {
 				throw new Exception("Making a variable optional and having default value is confusing. Class member: "
 						+ f.getName());
 			}

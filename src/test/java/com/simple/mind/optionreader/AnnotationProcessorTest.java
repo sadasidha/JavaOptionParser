@@ -6,15 +6,16 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
-public class AnnotationParserTest extends TestCase {
+public class AnnotationProcessorTest extends TestCase {
 
 	/**
 	 * Create the test case
 	 *
 	 * @param testName name of the test case
 	 */
-	public AnnotationParserTest(String testName) {
+	public AnnotationProcessorTest(String testName) {
 		super(testName);
+		new AnnotationProcessor();
 	}
 
 	/**
@@ -61,7 +62,14 @@ public class AnnotationParserTest extends TestCase {
 			assertEquals(e.getMessage(),
 					"This tool rejects snake style variable declaration. This is not ideal; but this seems safer. Rejected variable name: bad_variable");
 		}
-
 	}
 
+	public void testHasDefaultValue() {
+		try {
+		assertTrue(AnnotationProcessor.hasDefaultValue(null));
+		fail("Should not be here");
+		} catch(Exception e) {
+			
+		}
+	}
 }
