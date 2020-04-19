@@ -15,14 +15,18 @@ public class AnnotationProcessor {
 	 * @return
 	 */
 	public static ArrayList<String> getOptionNames(Field f) {
-		Options o = f.getAnnotation(Options.class);
 		ArrayList<String> t = new ArrayList<String>();
+		// add the name into the business
 		t.add(f.getName());
+
+		Options o = f.getAnnotation(Options.class);
 		if (o == null) {
 			return t;
 		}
+
 		for (String n : o.name()) {
-			if (!t.contains(n))
+			String pname = StringProcessor.convertFromSnake(n);
+			if (!t.contains(pname))
 				t.add(n);
 		}
 		return t;
@@ -107,16 +111,29 @@ public class AnnotationProcessor {
 			}
 			// check if there is duplicate name
 			String[] names = o == null ? null : o.name();
+			String varName = StringProcessor.convertFromSnake(f.getName());
+			if (StringProcessor.convertFromSnake(varName).compareTo(varName) != 0) {
+				throw new Exception(
+						"This tool rejects snake style variable declaration. This is not ideal; but this seems safer. Rejected variable name: "
+								+ varName);
+			}
+			if (nameList.contains(varName)) {
+				throw new Exception("Duplicate name: " + varName
+						+ "; make sure member variable name does not conflict with other command option name");
+			} else {
+				nameList.add(varName);
+			}
 			if (names != null) {
 				for (String name : names) {
 					if (nameList.contains(name)) {
-						throw new Exception("Duplicate Name: " + name);
+						throw new Exception("Duplicate name: " + name
+								+ "; make sure member variable name does not conflict with other command option name");
+					} else {
+						nameList.add(name);
 					}
 				}
 			}
-
 			checkFieldSanity(f, o);
-
 		}
 		return false;
 	}

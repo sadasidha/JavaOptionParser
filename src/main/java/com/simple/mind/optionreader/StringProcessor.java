@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 public class StringProcessor {
 	public static class NamgeLength {
 		public String name;
-		public String length;
+		public Integer length;
 	}
 
 	/**
@@ -22,14 +22,14 @@ public class StringProcessor {
 		Matcher matcher = Pattern.compile("^(--.+)?-([0-9]+)$").matcher(s);
 		if (matcher.matches()) {
 			toRet.name = matcher.group(1);
-			toRet.length = matcher.group(2);
+			toRet.length = Integer.valueOf(matcher.group(2));
 			return toRet;
 		}
 		// look for minor
 		matcher = Pattern.compile("^(-.)-?([0-9]+)$").matcher(s);
 		if (matcher.matches()) {
 			toRet.name = matcher.group(1);
-			toRet.length = matcher.group(2);
+			toRet.length = Integer.valueOf(matcher.group(2));
 			return toRet;
 		}
 		throw new Exception("Invalid Pattarn");
@@ -41,22 +41,24 @@ public class StringProcessor {
 		if (m.find()) {
 			s = m.replaceFirst(""); // number 46
 		}
-		return getProperFieldName1(s);
+		return convertFromSnake(s);
 	}
 
 	public static String formatName(String s) {
-		return getProperFieldName1(stripHyphen(s));
+		return convertFromSnake(stripHyphen(s));
 	}
 
 	/**
 	 * @param name : a_b
 	 * @return: aB
 	 */
-	public static String getProperFieldName1(String name) {
+	public static String convertFromSnake(String name) {
 		StringBuilder sb = new StringBuilder();
 		boolean prev = false;
 		for (int i = 0; i < name.length(); i++) {
-			if (prev == true) {
+			if (prev == true && name.charAt(i) == '_') {
+				sb.append(String.valueOf(name.charAt(i)));
+			} else if (prev == true) {
 				sb.append(String.valueOf(name.charAt(i)).toUpperCase());
 				prev = false;
 			} else if (name.charAt(i) == '_') {
@@ -68,4 +70,5 @@ public class StringProcessor {
 		}
 		return sb.toString();
 	}
+
 }

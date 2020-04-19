@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
 
 import com.simple.mind.optionreader.StringProcessor.NamgeLength;
 
-public class Parser {
+public class CommandParser {
 	public static HashMap<String, ArrayList<String>> processArgs(String[] args) throws Exception {
 		HashMap<String, ArrayList<String>> map = new HashMap<String, ArrayList<String>>();
 		for (int i = 0; i < args.length; i++) {
@@ -43,7 +43,7 @@ public class Parser {
 			/*
 			 * Array --array[ a b c d e "]"
 			 */
-			else if (args[i].matches("^--.*?\\[$") || args[i].matches("^-[^-]\\[$")) {
+			else if (args[i].matches("^--.*?\\[$")) {
 				Pattern pattern = Pattern.compile("^(.+)?\\[$");
 				Matcher matcher = pattern.matcher(args[i]);
 				String optionName;

@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class OptionParser<T> {
+public class OptionsParser<T> {
 	private static HashMap<String, ArrayList<String>> map;
 
 	/**
@@ -46,7 +46,7 @@ public class OptionParser<T> {
 	 * @throws Exception: Throws Exception
 	 */
 	public static <T> T ParseOption(String[] args, Class<T> c) throws Exception {
-		map = Parser.processArgs(args);
+		map = CommandParser.processArgs(args);
 		return prepareObject(c);
 	}
 

@@ -2,7 +2,6 @@ package com.simple.mind.optionreader;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import com.simple.mind.optionreader.annotations.Options;
@@ -32,7 +31,7 @@ public class AppTest extends TestCase {
 	}
 
 	public static class Arguments {
-		@Options(name = { "books", "b" }, optional = false)
+		@Options(name = { "books" }, optional = false)
 		public ArrayList<String> b;
 		public List<String> fileNames;
 		public boolean debug;
@@ -47,67 +46,15 @@ public class AppTest extends TestCase {
 		try {
 			String[] args = new String[] { "--file_names[", "file-one", "file-two", "]", "--debug", "--in", "10",
 					"--fileNames-3", "file-three", "file-four", "file-v", "--debug2", "--books", "blue" };
-			Arguments ar = OptionParser.ParseOption(args, Arguments.class);
+			Arguments ar = OptionsParser.ParseOption(args, Arguments.class);
 			assertEquals(ar.d2bug, true);
 			assertEquals(ar.debug, true);
 			assertEquals(ar.fileNames.size(), 5);
 			assertEquals(ar.b.size(), 1);
 			assertEquals(ar.b.get(0), "blue");
 		} catch (Exception e) {
-			assertFalse(true);
+			fail("Should not be here");
 		}
-	}
-
-	public void testArgumentProcessing() throws Throwable {
-		HashMap<String, ArrayList<String>> l = Parser.processArgs(new String[] { "--ff", "Coon", "--ff", "spoon" });
-		assertEquals(l.size(), 1);
-		assertEquals(l.get("ff").size(), 2);
-		assertTrue(l.get("ff").contains("Coon"));
-		assertTrue(l.get("ff").contains("spoon"));
-
-		l = Parser.processArgs(new String[] { "--ff", "Coon", "--debug", "--ff", "spoon" });
-		assertEquals(l.size(), 2);
-		assertEquals(l.get("ff").size(), 2);
-		assertTrue(l.get("ff").contains("Coon"));
-		assertTrue(l.get("ff").contains("spoon"));
-		assertTrue(l.get("debug").contains("true"));
-
-		l = Parser.processArgs(new String[] { "--ff", "Coon", "--debug", "false", "--ff", "spoon" });
-		assertEquals(l.size(), 2);
-		assertEquals(l.get("ff").size(), 2);
-		assertTrue(l.get("ff").contains("Coon"));
-		assertTrue(l.get("ff").contains("spoon"));
-		assertTrue(l.get("debug").contains("false"));
-
-		l = Parser.processArgs(new String[] { "--ff", "Coon", "--debug", "false", "--ff", "spoon" });
-		assertEquals(l.size(), 2);
-		assertEquals(l.get("ff").size(), 2);
-		assertTrue(l.get("ff").contains("Coon"));
-		assertTrue(l.get("ff").contains("spoon"));
-		assertTrue(l.get("debug").contains("false"));
-
-		l = Parser.processArgs(new String[] { "--ff", "Coon", "--debug", "false", "--ff", "spoon", "--ff-3", "broom",
-				"Doom", "Room" });
-		assertEquals(l.size(), 2);
-		assertEquals(l.get("ff").size(), 5);
-		assertTrue(l.get("ff").contains("Coon"));
-		assertTrue(l.get("ff").contains("spoon"));
-		assertTrue(l.get("ff").contains("broom"));
-		assertTrue(l.get("ff").contains("Doom"));
-		assertTrue(l.get("ff").contains("Room"));
-		assertTrue(l.get("debug").contains("false"));
-
-		l = Parser.processArgs(new String[] { "--ff", "coon", "--debug", "false", "--ff", "spoon", "--ff-3", "broom",
-				"doom", "room", "--ff[", "kaboom", "]" });
-		assertEquals(l.size(), 2);
-		assertEquals(l.get("ff").size(), 6);
-		assertTrue(l.get("ff").contains("coon"));
-		assertTrue(l.get("ff").contains("spoon"));
-		assertTrue(l.get("ff").contains("broom"));
-		assertTrue(l.get("ff").contains("doom"));
-		assertTrue(l.get("ff").contains("room"));
-		assertTrue(l.get("ff").contains("kaboom"));
-		assertTrue(l.get("debug").contains("false"));
 	}
 
 	public static class ClsToTest1 {
@@ -124,11 +71,6 @@ public class AppTest extends TestCase {
 		boolean debug;
 	}
 
-	public static class ClsToTest3 {
-		@Options(defaultValues = { "true", "true" })
-		String[] mult;
-	}
-
 	public static class ClsToTest4 {
 		@Options(defaultValues = { "true", "false" })
 		boolean[] mult1;
@@ -141,52 +83,46 @@ public class AppTest extends TestCase {
 
 	public void testObject() {
 		try {
-			OptionParser.ParseOption(new String[] {}, NodefToFail.class);
-			assertFalse(true);
+			OptionsParser.ParseOption(new String[] {}, NodefToFail.class);
+			fail("Should not be here");
 		} catch (Exception e) {
 			assertEquals(e.getMessage(), "debug should be single value, but set multiple values or does not exists");
 		}
 		try {
-			OptionParser.ParseOption(new String[] { "--abc def" }, ClsToTest1.class);
-			assertFalse(true);
+			OptionsParser.ParseOption(new String[] { "--abc def" }, ClsToTest1.class);
+			fail("Should not be here");
 		} catch (Exception e) {
 			assertEquals(e.getMessage(),
 					"Parameter name should not contain any non alpha numeric or non hyphen or non underscore characetr. Found: --abc def");
 		}
 		try {
 			ClsToTest1 clsToTest1_1 = null;
-			clsToTest1_1 = OptionParser.ParseOption(new String[] {}, ClsToTest1.class);
+			clsToTest1_1 = OptionsParser.ParseOption(new String[] {}, ClsToTest1.class);
 			assertTrue(clsToTest1_1.debug);
-			clsToTest1_1 = OptionParser.ParseOption(new String[] { "--debug", "false" }, ClsToTest1.class);
+			clsToTest1_1 = OptionsParser.ParseOption(new String[] { "--debug", "false" }, ClsToTest1.class);
 			assertFalse(clsToTest1_1.debug);
-			clsToTest1_1 = OptionParser.ParseOption(new String[] { "--debug", "true" }, ClsToTest1.class);
+			clsToTest1_1 = OptionsParser.ParseOption(new String[] { "--debug", "true" }, ClsToTest1.class);
 			assertTrue(clsToTest1_1.debug);
 		} catch (Exception e) {
-			assertFalse(true);
+			fail("Should not be here");
 		}
 		try {
-			OptionParser.ParseOption(new String[] { "--debug", "FLUE" }, ClsToTest1.class);
-			assertFalse(true);
+			OptionsParser.ParseOption(new String[] { "--debug", "FLUE" }, ClsToTest1.class);
+			fail("Should not be here");
 		} catch (Exception e) {
 			assertEquals(e.getMessage(), "Invalid Boolean value. Found: FLUE");
 		}
 
 		try {
-			OptionParser.ParseOption(new String[] {}, ClsToTest2.class);
-			assertFalse(true);
+			OptionsParser.ParseOption(new String[] {}, ClsToTest2.class);
+			fail("Should not be here");
 		} catch (Exception e) {
 			assertEquals(e.getMessage(), "Expecting Single value, received multiple in default");
-		}
-		try {
-			OptionParser.ParseOption(new String[] {}, ClsToTest3.class);
-			assertFalse(true);
-		} catch (Exception e) {
-			assertEquals(e.getMessage(), "Duplicates in default value: true");
 		}
 
 		ClsToTest4 cls4 = null;
 		try {
-			cls4 = OptionParser.ParseOption(new String[] { "--mult1", "--mult1", "--mult2", "--mult2", "true",
+			cls4 = OptionsParser.ParseOption(new String[] { "--mult1", "--mult1", "--mult2", "--mult2", "true",
 					"--mult2", "false", "--mult3", "--mult4", "false" }, ClsToTest4.class);
 			assertEquals(cls4.mult1.length, 2);
 			assertTrue(cls4.mult1[0]);
@@ -200,14 +136,14 @@ public class AppTest extends TestCase {
 			assertTrue(cls4.mult4.length == 1);
 			assertFalse(cls4.mult4[0]);
 		} catch (Exception e) {
-			assertFalse(true);
+			fail("Should not be here");
 		}
 
 		try {
-			cls4 = OptionParser.ParseOption(
+			cls4 = OptionsParser.ParseOption(
 					new String[] { "--mult1", "--mult1", "--mult2", "--mult2", "true", "--mult2", "false", "--mult3" },
 					ClsToTest4.class);
-			assertFalse(true);
+			fail("Should not be here");
 		} catch (Exception e) {
 			assertEquals(e.getMessage(), "mult4 default does not exists and no value is passed through command line");
 		}
@@ -226,21 +162,21 @@ public class AppTest extends TestCase {
 
 	public void testCheckMathValues() {
 		try {
-			OptionParser.ParseOption(new String[] { "--value2" }, CheckBigInt.class);
-			assertFalse(true);
+			OptionsParser.ParseOption(new String[] { "--value2" }, CheckBigInt.class);
+			fail("Should not be here");
 		} catch (Exception e) {
 			assertEquals(e.getMessage(), "Invalid Number is passed. Found: true");
 		}
 
 		try {
-			OptionParser.ParseOption(new String[] { "--value2-2", "20", "90" }, CheckBigInt.class);
-			assertFalse(true);
+			OptionsParser.ParseOption(new String[] { "--value2-2", "20", "90" }, CheckBigInt.class);
+			fail("Should not be here");
 		} catch (Exception e) {
 			assertEquals(e.getMessage(), "value2 should be single value, but set multiple values or does not exists");
 		}
 
 		try {
-			CheckBigInt cb1 = OptionParser.ParseOption(
+			CheckBigInt cb1 = OptionsParser.ParseOption(
 					new String[] { "--value1-2", "20", "90", "--value2", "12345678910111213141516178" },
 					CheckBigInt.class);
 			assertEquals(cb1.value1[0], BigInteger.valueOf(20));
@@ -251,11 +187,31 @@ public class AppTest extends TestCase {
 		}
 
 		try {
-			OptionParser.ParseOption(new String[] {}, CheckIntegerFail.class);
-			assertFalse(true);
+			OptionsParser.ParseOption(new String[] {}, CheckIntegerFail.class);
+			fail("Should not be here");
 		} catch (Exception e) {
 			assertEquals(e.getMessage(), "Number is too big for integer. Found: 9000000000000000000000000");
 		}
+	}
 
+	public static class Ignorable {
+		int x;
+		@Options(ignore = true)
+		int y;
+	}
+
+	public void testIgnorable() {
+		try {
+			OptionsParser.ParseOption(new String[] { "--x", "100" }, Ignorable.class);
+		} catch (Exception e) {
+			fail("Should not be here");
+		}
+
+		try {
+			OptionsParser.ParseOption(new String[] { "--y", "100" }, Ignorable.class);
+			fail("Should not be here");
+		} catch (Exception e) {
+			assertEquals(e.getMessage(), "x should be single value, but set multiple values or does not exists");
+		}
 	}
 }

@@ -2,7 +2,7 @@ package com.simple.mind.optionreader.example;
 
 import java.util.ArrayList;
 
-import com.simple.mind.optionreader.OptionParser;
+import com.simple.mind.optionreader.OptionsParser;
 import com.simple.mind.optionreader.annotations.Options;
 
 public class Example {
@@ -16,7 +16,7 @@ public class Example {
 	}
 
 	public static void main(String[] args) throws Exception {
-		Arguments a = OptionParser.ParseOption(args, Arguments.class);
+		Arguments a = OptionsParser.ParseOption(args, Arguments.class);
 		System.out.println("Print all files");
 		for (String fName : a.fileNames) {
 			System.out.println("> " + fName);
