@@ -2,7 +2,7 @@ package com.simple.mind.optionreader;
 
 import java.math.BigInteger;
 
-public class ParseNumericValue {
+public class ParseValueToPrimary {
 	private static final String MATCH_ANY_VALID_NUMBER = "^[+-]{0,1}\\d*\\.?\\d*$";
 	private static final String MATCH_NUMBER = "^[+-]{0,1}\\d+$";
 	private static final int MAX_COMP = 1;

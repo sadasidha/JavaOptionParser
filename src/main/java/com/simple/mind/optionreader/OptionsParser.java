@@ -1,17 +1,16 @@
 package com.simple.mind.optionreader;
 
-import static com.simple.mind.optionreader.ParseNumericValue.convertToInt;
-import static com.simple.mind.optionreader.ParseNumericValue.convertToLong;
-import static com.simple.mind.optionreader.ParseNumericValue.convertToFloat;
-import static com.simple.mind.optionreader.ParseNumericValue.convertToDouble;
-import static com.simple.mind.optionreader.ParseNumericValue.convertToByte;
-import static com.simple.mind.optionreader.ParseNumericValue.convertToChar;
-import static com.simple.mind.optionreader.ParseNumericValue.convertToBoolean;
+import static com.simple.mind.optionreader.ParseValueToPrimary.convertToInt;
+import static com.simple.mind.optionreader.ParseValueToPrimary.convertToLong;
+import static com.simple.mind.optionreader.ParseValueToPrimary.convertToFloat;
+import static com.simple.mind.optionreader.ParseValueToPrimary.convertToDouble;
+import static com.simple.mind.optionreader.ParseValueToPrimary.convertToByte;
+import static com.simple.mind.optionreader.ParseValueToPrimary.convertToChar;
+import static com.simple.mind.optionreader.ParseValueToPrimary.convertToBoolean;
 
 import static com.simple.mind.optionreader.AnnotationProcessor.getOptionNames;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -71,8 +70,12 @@ public class OptionsParser<T> {
 		T obj = null;
 		obj = c.getDeclaredConstructor().newInstance();
 		Field[] df = c.getDeclaredFields();
-		AnnotationProcessor.checkClassSanity(df);
+		AnnotationProcessor.checkClassSanityFields(df);
 		for (Field f : df) {
+			if (f.getName().compareTo("$jacocoData") == 0) {
+				// Adding this to avoid $jacocoData error for code coverage test
+				continue;
+			}
 			if (AnnotationProcessor.isIgnorable(f)) {
 				continue;
 			}
@@ -137,7 +140,7 @@ public class OptionsParser<T> {
 			if (isPr)
 				f.setLong(obj, (long) convertToLong(value));
 			else
-				f.setLong(obj, convertToLong(value));
+				f.set(obj, convertToLong(value));
 			f.setAccessible(b);
 			return;
 		}
@@ -152,7 +155,7 @@ public class OptionsParser<T> {
 		if (f.getType().isAssignableFrom(BigInteger.class)) {
 			boolean b = f.canAccess(obj);
 			f.setAccessible(true);
-			f.set(obj, ParseNumericValue.convertToBigInt(value));
+			f.set(obj, ParseValueToPrimary.convertToBigInt(value));
 			f.setAccessible(b);
 			return;
 		}
@@ -162,7 +165,7 @@ public class OptionsParser<T> {
 			if (isPr)
 				f.setChar(obj, (char) convertToChar(value));
 			else
-				f.setChar(obj, convertToChar(value));
+				f.set(obj, convertToChar(value));
 			f.setAccessible(b);
 			return;
 		}
@@ -172,7 +175,7 @@ public class OptionsParser<T> {
 			if (isPr)
 				f.setByte(obj, (byte) convertToByte(value));
 			else
-				f.setByte(obj, convertToByte(value));
+				f.set(obj, convertToByte(value));
 			f.setAccessible(b);
 			return;
 		}
@@ -182,7 +185,7 @@ public class OptionsParser<T> {
 			if (isPr)
 				f.setDouble(obj, (double) convertToDouble(value));
 			else
-				f.setDouble(obj, convertToDouble(value));
+				f.set(obj, convertToDouble(value));
 			f.setAccessible(b);
 			return;
 		}
@@ -190,9 +193,9 @@ public class OptionsParser<T> {
 			boolean b = f.canAccess(obj);
 			f.setAccessible(true);
 			if (isPr)
-				f.setDouble(obj, (float) convertToFloat(value));
+				f.setFloat(obj, (float) convertToFloat(value));
 			else
-				f.setDouble(obj, convertToFloat(value));
+				f.set(obj, convertToFloat(value));
 			f.setAccessible(b);
 			return;
 		}
@@ -202,30 +205,19 @@ public class OptionsParser<T> {
 			if (isPr)
 				f.setBoolean(obj, (boolean) convertToBoolean(value));
 			else
-				f.setBoolean(obj, convertToBoolean(value));
+				f.set(obj, convertToBoolean(value));
 			f.setAccessible(b);
 			return;
 		}
 	}
 
 	// TODO
-	private static String isValidListGenericType(Field f) throws Exception {
-		ParameterizedType pramType = (ParameterizedType) f.getGenericType();
-		Class<?> listGenType = (Class<?>) pramType.getActualTypeArguments()[0];
-		if (AcceptableList.primitives.contains(listGenType.getName())) {
-			return listGenType.getName();
-		}
-
-		throw new Exception("Invalid list Type: " + listGenType.getName());
-	}
-
-	// TODO
 	private static <T> void setListAndArray(T obj, Field f) throws Exception {
-		String primitiveType;
+		String memberType;
 		if (f.getType().isArray()) {
-			primitiveType = f.getType().getComponentType().getName();
+			memberType = f.getType().getComponentType().getName();
 		} else {
-			primitiveType = f.getType().getName();
+			memberType = f.getType().getName();
 		}
 
 		ArrayList<String> valArr = getValues(getOptionNames(f));
@@ -243,8 +235,8 @@ public class OptionsParser<T> {
 			}
 		}
 
-		if (AcceptableList.primitives.contains(primitiveType)) {
-			if (primitiveType.compareTo("int") == 0) {
+		if (AcceptableList.primitives.contains(memberType)) {
+			if (memberType.compareTo("int") == 0) {
 				int[] intArr = new int[valArr.size()];
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToInt(valArr.get(i));
@@ -255,7 +247,7 @@ public class OptionsParser<T> {
 				f.setAccessible(b);
 				return;
 			}
-			if (primitiveType.compareTo("java.lang.Integer") == 0) {
+			if (memberType.compareTo("java.lang.Integer") == 0) {
 				Integer[] intArr = new Integer[valArr.size()];
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToInt(valArr.get(i));
@@ -263,7 +255,7 @@ public class OptionsParser<T> {
 				f.set(obj, intArr);
 				return;
 			}
-			if (primitiveType.compareTo("long") == 0) {
+			if (memberType.compareTo("long") == 0) {
 				long[] intArr = new long[valArr.size()];
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToLong(valArr.get(i));
@@ -274,8 +266,8 @@ public class OptionsParser<T> {
 				f.setAccessible(b);
 				return;
 			}
-			if (primitiveType.compareTo("java.lang.Long") == 0) {
-				long[] intArr = new long[valArr.size()];
+			if (memberType.compareTo("java.lang.Long") == 0) {
+				Long[] intArr = new Long[valArr.size()];
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToLong(valArr.get(i));
 				}
@@ -285,7 +277,7 @@ public class OptionsParser<T> {
 				f.setAccessible(b);
 				return;
 			}
-			if (primitiveType.compareTo("byte") == 0) {
+			if (memberType.compareTo("byte") == 0) {
 				byte[] intArr = new byte[valArr.size()];
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToByte(valArr.get(i));
@@ -296,7 +288,7 @@ public class OptionsParser<T> {
 				f.setAccessible(b);
 				return;
 			}
-			if (primitiveType.compareTo("java.lang.Byte") == 0) {
+			if (memberType.compareTo("java.lang.Byte") == 0) {
 				Byte[] intArr = new Byte[valArr.size()];
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToByte(valArr.get(i));
@@ -307,7 +299,7 @@ public class OptionsParser<T> {
 				f.setAccessible(b);
 				return;
 			}
-			if (primitiveType.compareTo("char") == 0) {
+			if (memberType.compareTo("char") == 0) {
 				char[] intArr = new char[valArr.size()];
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToChar(valArr.get(i));
@@ -318,7 +310,7 @@ public class OptionsParser<T> {
 				f.setAccessible(b);
 				return;
 			}
-			if (primitiveType.compareTo("java.lang.Character") == 0) {
+			if (memberType.compareTo("java.lang.Character") == 0) {
 				Character[] intArr = new Character[valArr.size()];
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToChar(valArr.get(i));
@@ -329,7 +321,7 @@ public class OptionsParser<T> {
 				f.setAccessible(b);
 				return;
 			}
-			if (primitiveType.compareTo("float") == 0) {
+			if (memberType.compareTo("float") == 0) {
 				float[] intArr = new float[valArr.size()];
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToFloat(valArr.get(i));
@@ -337,7 +329,7 @@ public class OptionsParser<T> {
 				f.set(obj, intArr);
 				return;
 			}
-			if (primitiveType.compareTo("java.lang.Float") == 0) {
+			if (memberType.compareTo("java.lang.Float") == 0) {
 				Float[] intArr = new Float[valArr.size()];
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToFloat(valArr.get(i));
@@ -348,7 +340,7 @@ public class OptionsParser<T> {
 				f.setAccessible(b);
 				return;
 			}
-			if (primitiveType.compareTo("double") == 0) {
+			if (memberType.compareTo("double") == 0) {
 				double[] intArr = new double[valArr.size()];
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToDouble(valArr.get(i));
@@ -359,7 +351,7 @@ public class OptionsParser<T> {
 				f.setAccessible(b);
 				return;
 			}
-			if (primitiveType.compareTo("java.lang.Double") == 0) {
+			if (memberType.compareTo("java.lang.Double") == 0) {
 				Double[] intArr = new Double[valArr.size()];
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToDouble(valArr.get(i));
@@ -370,7 +362,7 @@ public class OptionsParser<T> {
 				f.setAccessible(b);
 				return;
 			}
-			if (primitiveType.compareTo("boolean") == 0) {
+			if (memberType.compareTo("boolean") == 0) {
 				boolean[] intArr = new boolean[valArr.size()];
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToBoolean(valArr.get(i));
@@ -381,7 +373,7 @@ public class OptionsParser<T> {
 				f.setAccessible(b);
 				return;
 			}
-			if (primitiveType.compareTo("java.lang.Boolean") == 0) {
+			if (memberType.compareTo("java.lang.Boolean") == 0) {
 				Boolean[] intArr = new Boolean[valArr.size()];
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = convertToBoolean(valArr.get(i));
@@ -392,7 +384,7 @@ public class OptionsParser<T> {
 				f.setAccessible(b);
 				return;
 			}
-			if (primitiveType.compareTo("java.lang.String") == 0) {
+			if (memberType.compareTo("java.lang.String") == 0) {
 				String[] intArr = new String[valArr.size()];
 				for (int i = 0; i < valArr.size(); i++) {
 					intArr[i] = valArr.get(i);
@@ -403,10 +395,10 @@ public class OptionsParser<T> {
 				f.setAccessible(b);
 				return;
 			}
-			if (primitiveType.compareTo("java.math.BigInteger") == 0) {
+			if (memberType.compareTo("java.math.BigInteger") == 0) {
 				BigInteger[] intArr = new BigInteger[valArr.size()];
 				for (int i = 0; i < valArr.size(); i++) {
-					intArr[i] = ParseNumericValue.convertToBigInt(valArr.get(i));
+					intArr[i] = ParseValueToPrimary.convertToBigInt(valArr.get(i));
 				}
 				boolean b = f.canAccess(obj);
 				f.setAccessible(true);
@@ -414,8 +406,8 @@ public class OptionsParser<T> {
 				f.setAccessible(b);
 				return;
 			}
-		} else if (AcceptableList.listTypes.contains(primitiveType)) {
-			String type = isValidListGenericType(f);
+		} else if (AcceptableList.listTypes.contains(memberType)) {
+			String type = AnnotationProcessor.isValidListGenericType(f);
 
 			if (type.compareTo("java.lang.Integer") == 0) {
 				List<Integer> intArr = new ArrayList<Integer>();
@@ -504,10 +496,10 @@ public class OptionsParser<T> {
 				f.setAccessible(b);
 				return;
 			}
-			if (primitiveType.compareTo("java.math.BigInteger") == 0) {
+			if (type.compareTo("java.math.BigInteger") == 0) {
 				List<BigInteger> intArr = new ArrayList<BigInteger>();
 				for (int i = 0; i < valArr.size(); i++) {
-					intArr.add(ParseNumericValue.convertToBigInt(valArr.get(i)));
+					intArr.add(ParseValueToPrimary.convertToBigInt(valArr.get(i)));
 				}
 				boolean b = f.canAccess(obj);
 				f.setAccessible(true);
@@ -516,7 +508,7 @@ public class OptionsParser<T> {
 				return;
 			}
 		}
-		throw new Exception("Type defined in class is not valid: " + primitiveType);
+		throw new Exception("Type defined in class is not valid: " + memberType);
 	}
 
 }

@@ -16,7 +16,8 @@ public class CommandParser {
 		for (int i = 0; i < args.length; i++) {
 			if (!args[i].matches("^[a-zA-Z0-9-_]+[\\[]{0,1}$")) {
 				throw new Exception(
-						"Parameter name should not contain any non alpha numeric or non hyphen or non underscore characetr. Found: " + args[i]);
+						"Parameter name should not contain any non alpha numeric or non hyphen or non underscore characetr. Found: "
+								+ args[i]);
 			}
 			/*
 			 * Array --array-10 a b c d e f g h i j
@@ -46,11 +47,9 @@ public class CommandParser {
 			else if (args[i].matches("^--.*?\\[$")) {
 				Pattern pattern = Pattern.compile("^(.+)?\\[$");
 				Matcher matcher = pattern.matcher(args[i]);
-				String optionName;
+				String optionName = null;
 				if (matcher.matches()) {
 					optionName = formatName(matcher.group(1));
-				} else {
-					throw new Exception("Bad input");
 				}
 				ArrayList<String> l = map.get(optionName);
 				if (l == null) {
@@ -67,7 +66,7 @@ public class CommandParser {
 					l.add(args[i]);
 				}
 				if (!end) {
-					throw new Exception("Invalid input");
+					throw new Exception("Invalid input. Range ended unexpectedly");
 				}
 			} else if (args[i].matches("^--.+$")) {
 				/*
@@ -97,7 +96,7 @@ public class CommandParser {
 					l.add(args[i]);
 				}
 			} else {
-				throw new Exception("Invalid option " + args[i]);
+				throw new Exception("Invalid option: " + args[i]);
 			}
 		}
 		return map;

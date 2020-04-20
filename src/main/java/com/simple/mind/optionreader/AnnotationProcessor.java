@@ -1,6 +1,7 @@
 package com.simple.mind.optionreader;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 
 import com.simple.mind.optionreader.annotations.Options;
@@ -63,12 +64,15 @@ public class AnnotationProcessor {
 	}
 
 	public static boolean hasDefaultValue(Field f) {
+		if (f == null) {
+			return false;
+		}
 		Options o = f.getAnnotation(Options.class);
 		if (o == null)
 			return false;
 		if (o.defaultValues() != null && o.defaultValues().length != 0)
 			return true;
-		return true;
+		return false;
 	}
 
 	public static boolean checkFieldSanity(Field f, Options o) throws Exception {
@@ -91,10 +95,10 @@ public class AnnotationProcessor {
 	}
 
 	public static boolean checkClassSanity(Class<?> z) throws Exception {
-		return checkClassSanity(z);
+		return checkClassSanityFields(z.getDeclaredFields());
 	}
 
-	public static boolean checkClassSanity(Field[] fields) throws Exception {
+	public static boolean checkClassSanityFields(Field[] fields) throws Exception {
 		ArrayList<String> nameList = new ArrayList<String>();
 		for (Field f : fields) {
 			Options o = f.getAnnotation(Options.class);
@@ -112,10 +116,10 @@ public class AnnotationProcessor {
 			// check if there is duplicate name
 			String[] names = o == null ? null : o.name();
 			String varName = StringProcessor.convertFromSnake(f.getName());
-			if (StringProcessor.convertFromSnake(varName).compareTo(varName) != 0) {
+			if (StringProcessor.convertFromSnake(varName).compareTo(f.getName()) != 0) {
 				throw new Exception(
 						"This tool rejects snake style variable declaration. This is not ideal; but this seems safer. Rejected variable name: "
-								+ varName);
+								+ f.getName());
 			}
 			if (nameList.contains(varName)) {
 				throw new Exception("Duplicate name: " + varName
@@ -136,5 +140,15 @@ public class AnnotationProcessor {
 			checkFieldSanity(f, o);
 		}
 		return false;
+	}
+
+	public static String isValidListGenericType(Field f) throws Exception {
+		ParameterizedType pramType = (ParameterizedType) f.getGenericType();
+		Class<?> listGenType = (Class<?>) pramType.getActualTypeArguments()[0];
+		if (AcceptableList.primitives.contains(listGenType.getName())) {
+			return listGenType.getName();
+		}
+
+		throw new Exception("Invalid list Type: " + listGenType.getName());
 	}
 }

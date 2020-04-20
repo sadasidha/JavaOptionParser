@@ -2,12 +2,18 @@ package com.simple.mind.optionreader;
 
 import com.simple.mind.optionreader.StringProcessor.NamgeLength;
 
+import junit.framework.Test;
 import junit.framework.TestCase;
+import junit.framework.TestSuite;
 
 public class StringProcessorTest extends TestCase {
 
 	public StringProcessorTest(String testName) {
 		super(testName);
+	}
+
+	public static Test suite() {
+		return new TestSuite(StringProcessorTest.class);
 	}
 
 	public void testFromSnake() {
