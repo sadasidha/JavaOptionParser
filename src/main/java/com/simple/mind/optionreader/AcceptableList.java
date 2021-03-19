@@ -2,13 +2,12 @@ package com.simple.mind.optionreader;
 
 import java.util.ArrayList;
 
-public class AcceptableList {
+class AcceptableList {
 	public static final ArrayList<String> listTypes;
 	public static final ArrayList<String> primitives;
 	static {
 		listTypes = new ArrayList<String>();
 		listTypes.add("java.util.List");
-		listTypes.add("java.util.ArrayList");
 		primitives = new ArrayList<String>();
 		primitives.add("int");
 		primitives.add("java.lang.Integer");

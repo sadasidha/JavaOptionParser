@@ -1,514 +1,347 @@
 package com.simple.mind.optionreader;
 
-import static com.simple.mind.optionreader.ParseValueToPrimary.convertToInt;
-import static com.simple.mind.optionreader.ParseValueToPrimary.convertToLong;
-import static com.simple.mind.optionreader.ParseValueToPrimary.convertToFloat;
-import static com.simple.mind.optionreader.ParseValueToPrimary.convertToDouble;
-import static com.simple.mind.optionreader.ParseValueToPrimary.convertToByte;
-import static com.simple.mind.optionreader.ParseValueToPrimary.convertToChar;
-import static com.simple.mind.optionreader.ParseValueToPrimary.convertToBoolean;
-
-import static com.simple.mind.optionreader.AnnotationProcessor.getOptionNames;
-
 import java.lang.reflect.Field;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 
-public class OptionsParser<T> {
-	private static HashMap<String, ArrayList<String>> map;
+public class OptionsParser {
+    private static ParseCommand parsed = null;
 
-	/**
-	 * Parse arguments, do not throw exception; print the exception on console.
-	 * 
-	 * @param <T>
-	 * @param args
-	 * @param c
-	 * @return
-	 */
-	public static <T> T ReadOptionNE(String[] args, Class<T> c) {
-		T obj = null;
-		try {
-			obj = ParseOption(args, c);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return obj;
-	}
+    /**
+     * @param <T>  Generic Class
+     * @param args Array of string to be parsed
+     * @param c    : Class Type
+     * @return: Returns Object of class
+     */
+    public static <T> T ParseOption(String[] args, Class<T> c) {
+        parsed = new ParseCommand(args);
+        return prepareObject(c);
+    }
 
-	/**
-	 * @param <T>  Generic Class
-	 * @param args Array of string to be parsed
-	 * @param c    : Class Type
-	 * @return: Returns Object of class
-	 * @throws Exception: Throws Exception
-	 */
-	public static <T> T ParseOption(String[] args, Class<T> c) throws Exception {
-		map = CommandParser.processArgs(args);
-		return prepareObject(c);
-	}
+    private static boolean isArrayOrList(Field f) {
+        if (f.getType().isArray()) {
+            return true;
+        }
 
-	private static boolean isArrayOrList(Field f) {
-		if (f.getType().isArray()) {
-			return true;
-		}
+        if (AcceptableList.listTypes.contains(f.getType().getName())) {
+            return true;
+        }
+        return false;
+    }
 
-		if (AcceptableList.listTypes.contains(f.getType().getName())) {
-			return true;
-		}
-		return false;
-	}
+    /**
+     * @param <T> Class that needed to be assigned
+     * @param c   Class
+     * @return Class Object
+     * @throws Exception
+     */
+    private static <T> T prepareObject(Class<T> c) {
+        try {
+            T obj = null;
+            obj = c.getDeclaredConstructor().newInstance();
+            Field[] df = c.getDeclaredFields();
+            for (Field f : df) {
+                // Adding this to avoid $jacocoData error for code coverage test
+                if (f.getName().compareTo("$jacocoData") == 0 || AnnotationProcessor.isIgnorable(f))
+                    continue;
+                if (isArrayOrList(f))
+                    setListAndArray(obj, f);
+                else
+                    handleNonArray(obj, f);
+            }
+            return obj;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-	/**
-	 * @param <T> Class that needed to be assigned
-	 * @param c   Class
-	 * @return Class Object
-	 * @throws Exception
-	 */
-	private static <T> T prepareObject(Class<T> c) throws Exception {
-		T obj = null;
-		obj = c.getDeclaredConstructor().newInstance();
-		Field[] df = c.getDeclaredFields();
-		AnnotationProcessor.checkClassSanityFields(df);
-		for (Field f : df) {
-			if (f.getName().compareTo("$jacocoData") == 0) {
-				// Adding this to avoid $jacocoData error for code coverage test
-				continue;
-			}
-			if (AnnotationProcessor.isIgnorable(f)) {
-				continue;
-			}
-			boolean isArrList = isArrayOrList(f);
-			if (!isArrList)
-				handleNonArray(obj, f);
-			else {
-				setListAndArray(obj, f);
-			}
-		}
-		return obj;
-	}
+    private static <T> void setPrimitive(T obj, Field f, String v) {
+        try {
+            boolean b = f.isAccessible();
+            f.setAccessible(true);
+            switch (f.getType().getName()) {
+            case "int":
+                f.setInt(obj, TypeConverter.toInt(v));
+                break;
+            case "long":
+                f.setLong(obj, TypeConverter.toLong(v));
+                break;
+            case "java.lang.String":
+                f.set(obj, v);
+                break;
+            case "java.math.BigInteger":
+                f.set(obj, TypeConverter.toBigInt(v));
+                break;
+            case "char":
+                f.set(obj, TypeConverter.toChar(v));
+                break;
+            case "byte":
+                f.set(obj, TypeConverter.toByte(v));
+                break;
+            case "double":
+                f.set(obj, TypeConverter.toDouble(v));
+                break;
+            case "float":
+                f.set(obj, TypeConverter.toFloat(v));
+                break;
+            case "boolean":
+                f.set(obj, TypeConverter.toBoolean(v));
+                break;
+            default:
+                throw new RuntimeException("Very unusual type " + f.getType().getCanonicalName());
+            }
+            f.setAccessible(b);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-	/**
-	 * Compile all value by names into single array and return;
-	 * 
-	 * @param name array: can be compiled by getOptionNames
-	 * @return
-	 */
-	// TODO fUCK THIS
-	private static ArrayList<String> getValues(ArrayList<String> names) {
-		ArrayList<String> toRet = new ArrayList<String>();
-		for (String name : names) {
-			if (map.get(name) != null) {
-				for (String s : map.get(name)) {
-					toRet.add(s);
-				}
-			}
-		}
-		return toRet;
-	}
+    private static <T> void handleNonArray(T obj, Field f) {
+        try {
+            boolean b = f.isAccessible();
+            f.setAccessible(true);
+            String key = AnnotationProcessor.getOptionNames(f);
+            if (f.getType().isPrimitive()) {
+                String defaultValue = AnnotationProcessor.getDefaultSingleValue(f);
+                String v = parsed.get(key);
+                setPrimitive(obj, f, v == null ? defaultValue : v);
+                return;
+            }
+            switch (f.getType().getName()) {
+            case "java.lang.Integer":
+            case "Integer":
+                f.set(obj, parsed.getInt(key));
+                break;
+            case "java.lang.Long":
+            case "Long":
+                f.set(obj, parsed.getLong(key));
+                break;
+            case "java.lang.String":
+            case "String":
+                f.set(obj, parsed.get(key));
+                break;
+            case "java.lang.Character":
+            case "Character":
+                f.set(obj, parsed.getChar(key));
+                break;
+            case "java.lang.Byte":
+            case "Byte":
+                f.set(obj, parsed.getByte(key));
+                break;
+            case "java.lang.Double":
+            case "Double":
+                f.set(obj, parsed.getDouble(key));
+                break;
+            case "java.lang.Float":
+            case "Float":
+                f.set(obj, parsed.getFloat(key));
+                break;
+            case "java.lang.Boolean":
+            case "Boolean":
+                f.set(obj, parsed.getBool(key));
+                break;
+            case "java.math.BigInteger":
+            case "BigInteger":
+                f.set(obj, parsed.getBigInt(key));
+                break;
+            default:
+                throw new RuntimeException("We cannot process " + f.getType().getName() + " ");
+            }
+            f.setAccessible(b);
+        } catch (
 
-	private static <T> void handleNonArray(T obj, Field f) throws Exception {
-		ArrayList<String> values = getValues(getOptionNames(f));
+        Exception e) {
+            throw new RuntimeException(e);
+        }
 
-		if (values == null || values.size() == 0) {
-			values = AnnotationProcessor.getDefaultValues(f);
-		}
+    }
 
-		if (values.size() != 1) {
-			if (values.size() != 1) {
-				throw new Exception(
-						f.getName() + " should be single value, but set multiple values or does not exists");
-			}
-		}
+    private static int[] objectToIntArr(Integer[] a) {
+        int[] ar = new int[a.length];
+        int i = 0;
+        for (int in : a) {
+            ar[i] = in;
+            i++;
+        }
+        return ar;
+    }
 
-		String value = values.get(0);
-		boolean isPr = f.getType().isPrimitive();
-		if (f.getType().equals(Integer.TYPE) || f.getType().isAssignableFrom(Integer.class)) {
-			boolean b = f.canAccess(obj);
-			f.setAccessible(true);
-			if (isPr)
-				f.setInt(obj, (int) convertToInt(value));
-			else
-				f.set(obj, convertToInt(value));
-			f.setAccessible(b);
-			return;
-		}
-		if (f.getType().equals(Long.TYPE) || f.getType().isAssignableFrom(Long.class)) {
-			boolean b = f.canAccess(obj);
-			f.setAccessible(true);
-			if (isPr)
-				f.setLong(obj, (long) convertToLong(value));
-			else
-				f.set(obj, convertToLong(value));
-			f.setAccessible(b);
-			return;
-		}
-		if (f.getType().isAssignableFrom(String.class)) {
-			boolean b = f.canAccess(obj);
-			f.setAccessible(true);
-			f.set(obj, value);
-			f.setAccessible(b);
-			return;
-		}
+    private static long[] objectToLongArr(Long[] a) {
+        long[] ar = new long[a.length];
+        int i = 0;
+        for (long in : a) {
+            ar[i] = in;
+            i++;
+        }
+        return ar;
+    }
 
-		if (f.getType().isAssignableFrom(BigInteger.class)) {
-			boolean b = f.canAccess(obj);
-			f.setAccessible(true);
-			f.set(obj, ParseValueToPrimary.convertToBigInt(value));
-			f.setAccessible(b);
-			return;
-		}
-		if (f.getType().equals(Character.TYPE) || f.getType().isAssignableFrom(Character.class)) {
-			boolean b = f.canAccess(obj);
-			f.setAccessible(true);
-			if (isPr)
-				f.setChar(obj, (char) convertToChar(value));
-			else
-				f.set(obj, convertToChar(value));
-			f.setAccessible(b);
-			return;
-		}
-		if (f.getType().equals(Byte.TYPE) || f.getType().isAssignableFrom(Byte.class)) {
-			boolean b = f.canAccess(obj);
-			f.setAccessible(true);
-			if (isPr)
-				f.setByte(obj, (byte) convertToByte(value));
-			else
-				f.set(obj, convertToByte(value));
-			f.setAccessible(b);
-			return;
-		}
-		if (f.getType().equals(Double.TYPE) || f.getType().isAssignableFrom(Double.class)) {
-			boolean b = f.canAccess(obj);
-			f.setAccessible(true);
-			if (isPr)
-				f.setDouble(obj, (double) convertToDouble(value));
-			else
-				f.set(obj, convertToDouble(value));
-			f.setAccessible(b);
-			return;
-		}
-		if (f.getType().equals(Float.TYPE) || f.getType().isAssignableFrom(Float.class)) {
-			boolean b = f.canAccess(obj);
-			f.setAccessible(true);
-			if (isPr)
-				f.setFloat(obj, (float) convertToFloat(value));
-			else
-				f.set(obj, convertToFloat(value));
-			f.setAccessible(b);
-			return;
-		}
-		if (f.getType().equals(Boolean.TYPE) || f.getType().isAssignableFrom(Boolean.class)) {
-			boolean b = f.canAccess(obj);
-			f.setAccessible(true);
-			if (isPr)
-				f.setBoolean(obj, (boolean) convertToBoolean(value));
-			else
-				f.set(obj, convertToBoolean(value));
-			f.setAccessible(b);
-			return;
-		}
-	}
+    private static byte[] objectToByteArr(Byte[] a) {
+        byte[] ar = new byte[a.length];
+        int i = 0;
+        for (byte in : a) {
+            ar[i] = in;
+            i++;
+        }
+        return ar;
+    }
 
-	// TODO
-	private static <T> void setListAndArray(T obj, Field f) throws Exception {
-		String memberType;
-		if (f.getType().isArray()) {
-			memberType = f.getType().getComponentType().getName();
-		} else {
-			memberType = f.getType().getName();
-		}
+    private static char[] objectToCharArr(Character[] a) {
+        char[] ar = new char[a.length];
+        int i = 0;
+        for (char in : a) {
+            ar[i] = in;
+            i++;
+        }
+        return ar;
+    }
 
-		ArrayList<String> valArr = getValues(getOptionNames(f));
+    private static double[] objectToDoubleArr(Double[] a) {
+        double[] ar = new double[a.length];
+        int i = 0;
+        for (double in : a) {
+            ar[i] = in;
+            i++;
+        }
+        return ar;
+    }
 
-		// I do not expect valArr to be null
-		if (valArr.size() == 0 && AnnotationProcessor.isOptional(f) == false
-				&& !AnnotationProcessor.hasDefaultValue(f)) {
-			throw new Exception(f.getName()
-					+ " is not optional, does not have default values and no value is passed through command line");
-		} else if (valArr == null || valArr.size() == 0) {
-			valArr = AnnotationProcessor.getDefaultValues(f);
-			if (valArr.size() == 0) {
-				throw new Exception(
-						f.getName() + " default does not exists and no value is passed through command line");
-			}
-		}
+    private static float[] objectToFloatArr(Float[] a) {
+        float[] ar = new float[a.length];
+        int i = 0;
+        for (float in : a) {
+            ar[i] = in;
+            i++;
+        }
+        return ar;
+    }
 
-		if (AcceptableList.primitives.contains(memberType)) {
-			if (memberType.compareTo("int") == 0) {
-				int[] intArr = new int[valArr.size()];
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr[i] = convertToInt(valArr.get(i));
-				}
-				boolean b = f.canAccess(obj);
-				f.setAccessible(true);
-				f.set(obj, intArr);
-				f.setAccessible(b);
-				return;
-			}
-			if (memberType.compareTo("java.lang.Integer") == 0) {
-				Integer[] intArr = new Integer[valArr.size()];
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr[i] = convertToInt(valArr.get(i));
-				}
-				f.set(obj, intArr);
-				return;
-			}
-			if (memberType.compareTo("long") == 0) {
-				long[] intArr = new long[valArr.size()];
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr[i] = convertToLong(valArr.get(i));
-				}
-				boolean b = f.canAccess(obj);
-				f.setAccessible(true);
-				f.set(obj, intArr);
-				f.setAccessible(b);
-				return;
-			}
-			if (memberType.compareTo("java.lang.Long") == 0) {
-				Long[] intArr = new Long[valArr.size()];
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr[i] = convertToLong(valArr.get(i));
-				}
-				boolean b = f.canAccess(obj);
-				f.setAccessible(true);
-				f.set(obj, intArr);
-				f.setAccessible(b);
-				return;
-			}
-			if (memberType.compareTo("byte") == 0) {
-				byte[] intArr = new byte[valArr.size()];
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr[i] = convertToByte(valArr.get(i));
-				}
-				boolean b = f.canAccess(obj);
-				f.setAccessible(true);
-				f.set(obj, intArr);
-				f.setAccessible(b);
-				return;
-			}
-			if (memberType.compareTo("java.lang.Byte") == 0) {
-				Byte[] intArr = new Byte[valArr.size()];
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr[i] = convertToByte(valArr.get(i));
-				}
-				boolean b = f.canAccess(obj);
-				f.setAccessible(true);
-				f.set(obj, intArr);
-				f.setAccessible(b);
-				return;
-			}
-			if (memberType.compareTo("char") == 0) {
-				char[] intArr = new char[valArr.size()];
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr[i] = convertToChar(valArr.get(i));
-				}
-				boolean b = f.canAccess(obj);
-				f.setAccessible(true);
-				f.set(obj, intArr);
-				f.setAccessible(b);
-				return;
-			}
-			if (memberType.compareTo("java.lang.Character") == 0) {
-				Character[] intArr = new Character[valArr.size()];
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr[i] = convertToChar(valArr.get(i));
-				}
-				boolean b = f.canAccess(obj);
-				f.setAccessible(true);
-				f.set(obj, intArr);
-				f.setAccessible(b);
-				return;
-			}
-			if (memberType.compareTo("float") == 0) {
-				float[] intArr = new float[valArr.size()];
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr[i] = convertToFloat(valArr.get(i));
-				}
-				f.set(obj, intArr);
-				return;
-			}
-			if (memberType.compareTo("java.lang.Float") == 0) {
-				Float[] intArr = new Float[valArr.size()];
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr[i] = convertToFloat(valArr.get(i));
-				}
-				boolean b = f.canAccess(obj);
-				f.setAccessible(true);
-				f.set(obj, intArr);
-				f.setAccessible(b);
-				return;
-			}
-			if (memberType.compareTo("double") == 0) {
-				double[] intArr = new double[valArr.size()];
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr[i] = convertToDouble(valArr.get(i));
-				}
-				boolean b = f.canAccess(obj);
-				f.setAccessible(true);
-				f.set(obj, intArr);
-				f.setAccessible(b);
-				return;
-			}
-			if (memberType.compareTo("java.lang.Double") == 0) {
-				Double[] intArr = new Double[valArr.size()];
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr[i] = convertToDouble(valArr.get(i));
-				}
-				boolean b = f.canAccess(obj);
-				f.setAccessible(true);
-				f.set(obj, intArr);
-				f.setAccessible(b);
-				return;
-			}
-			if (memberType.compareTo("boolean") == 0) {
-				boolean[] intArr = new boolean[valArr.size()];
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr[i] = convertToBoolean(valArr.get(i));
-				}
-				boolean b = f.canAccess(obj);
-				f.setAccessible(true);
-				f.set(obj, intArr);
-				f.setAccessible(b);
-				return;
-			}
-			if (memberType.compareTo("java.lang.Boolean") == 0) {
-				Boolean[] intArr = new Boolean[valArr.size()];
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr[i] = convertToBoolean(valArr.get(i));
-				}
-				boolean b = f.canAccess(obj);
-				f.setAccessible(true);
-				f.set(obj, intArr);
-				f.setAccessible(b);
-				return;
-			}
-			if (memberType.compareTo("java.lang.String") == 0) {
-				String[] intArr = new String[valArr.size()];
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr[i] = valArr.get(i);
-				}
-				boolean b = f.canAccess(obj);
-				f.setAccessible(true);
-				f.set(obj, intArr);
-				f.setAccessible(b);
-				return;
-			}
-			if (memberType.compareTo("java.math.BigInteger") == 0) {
-				BigInteger[] intArr = new BigInteger[valArr.size()];
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr[i] = ParseValueToPrimary.convertToBigInt(valArr.get(i));
-				}
-				boolean b = f.canAccess(obj);
-				f.setAccessible(true);
-				f.set(obj, intArr);
-				f.setAccessible(b);
-				return;
-			}
-		} else if (AcceptableList.listTypes.contains(memberType)) {
-			String type = AnnotationProcessor.isValidListGenericType(f);
+    private static boolean[] objectToBoolArr(Boolean[] a) {
+        boolean[] ar = new boolean[a.length];
+        int i = 0;
+        for (boolean in : a) {
+            ar[i] = in;
+            i++;
+        }
+        return ar;
+    }
 
-			if (type.compareTo("java.lang.Integer") == 0) {
-				List<Integer> intArr = new ArrayList<Integer>();
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr.add(convertToInt(valArr.get(i)));
-				}
-				boolean b = f.canAccess(obj);
-				f.setAccessible(true);
-				f.set(obj, intArr);
-				f.setAccessible(b);
-				return;
-			}
-			if (type.compareTo("java.lang.Long") == 0) {
-				List<Long> intArr = new ArrayList<Long>();
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr.add(convertToLong(valArr.get(i)));
-				}
-				boolean b = f.canAccess(obj);
-				f.setAccessible(true);
-				f.set(obj, intArr);
-				f.setAccessible(b);
-				return;
-			}
+    // TODO
+    private static <T> void setListAndArray(T obj, Field f) {
+        try {
+            String memberType;
+            if (f.getType().isArray()) {
+                memberType = f.getType().getComponentType().getName();
+            } else {
+                memberType = f.getType().getName();
+            }
 
-			if (type.compareTo("java.lang.Byte") == 0) {
-				List<Byte> intArr = new ArrayList<Byte>();
-				;
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr.add(convertToByte(valArr.get(i)));
-				}
-				boolean b = f.canAccess(obj);
-				f.setAccessible(true);
-				f.set(obj, intArr);
-				f.setAccessible(b);
-				return;
-			}
-			if (type.compareTo("java.lang.Character") == 0) {
-				List<Character> intArr = new ArrayList<Character>();
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr.add(convertToChar(valArr.get(i)));
-				}
-				boolean b = f.canAccess(obj);
-				f.setAccessible(true);
-				f.set(obj, intArr);
-				f.setAccessible(b);
-				return;
-			}
-			if (type.compareTo("java.lang.Float") == 0) {
-				List<Float> intArr = new ArrayList<Float>();
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr.add(convertToFloat(valArr.get(i)));
-				}
-				boolean b = f.canAccess(obj);
-				f.setAccessible(true);
-				f.set(obj, intArr);
-				f.setAccessible(b);
-				return;
-			}
-			if (type.compareTo("java.lang.Double") == 0) {
-				List<Double> intArr = new ArrayList<Double>();
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr.add(convertToDouble(valArr.get(i)));
-				}
-				boolean b = f.canAccess(obj);
-				f.setAccessible(true);
-				f.set(obj, intArr);
-				f.setAccessible(b);
-				return;
-			}
-			if (type.compareTo("java.lang.String") == 0) {
-				boolean b = f.canAccess(obj);
-				f.setAccessible(true);
-				f.set(obj, valArr);
-				f.setAccessible(b);
-				return;
-			}
+            String key = AnnotationProcessor.getOptionNames(f);
+            boolean b = f.isAccessible();
+            f.setAccessible(true);
+            if (AcceptableList.primitives.contains(memberType)) {
+                switch (memberType) {
+                case "int":
+                    f.set(obj, objectToIntArr(parsed.getIntArray(key)));
+                    break;
+                case "java.lang.Integer":
+                case "Integer":
+                    f.set(obj, parsed.getIntArray(key));
+                    break;
+                case "long":
+                    f.set(obj, objectToLongArr(parsed.getLongArray(key)));
+                    break;
+                case "java.lang.Long":
+                case "Long":
+                    f.set(obj, parsed.getLongArray(key));
+                    break;
+                case "byte":
+                    f.set(obj, objectToByteArr(parsed.getByteArray(key)));
+                    break;
+                case "java.lang.Byte":
+                case "Byte":
+                    f.set(obj, parsed.getByteArray(key));
+                    break;
+                case "char":
+                    f.set(obj, objectToCharArr(parsed.getCharArray(key)));
+                    break;
+                case "java.lang.Character":
+                case "Character":
+                    f.set(obj, parsed.getCharArray(key));
+                    break;
+                case "float":
+                    f.set(obj, objectToFloatArr(parsed.getFloatArray(key)));
+                    break;
+                case "java.lang.Float":
+                case "Float":
+                    f.set(obj, parsed.getFloatArray(key));
+                    break;
+                case "double":
+                    f.set(obj, objectToDoubleArr(parsed.getDoubleArray(key)));
+                    break;
+                case "java.lang.Double":
+                case "Double":
+                    f.set(obj, parsed.getDoubleArray(key));
+                    break;
+                case "boolean":
+                    f.set(obj, objectToBoolArr(parsed.getBoolArray(key)));
+                    break;
+                case "java.lang.Boolean":
+                case "Boolean":
+                    f.set(obj, parsed.getBoolArray(key));
+                    break;
+                case "java.lang.String":
+                case "String":
+                    f.set(obj, parsed.getArray(key));
+                    break;
+                case "java.math.BigInteger":
+                case "BigInteger":
+                    f.set(obj, parsed.getBigIntArray(key));
+                    break;
+                default:
+                    throw new RuntimeException("Type defined in class is not valid: " + memberType);
+                }
+            } else if (AcceptableList.listTypes.contains(memberType)) {
+                String type = AnnotationProcessor.isValidListGenericType(f);
+                switch (type) {
+                case "java.lang.Integer":
+                    f.set(obj, parsed.getIntList(key));
+                    break;
+                case "java.lang.Long":
+                    f.set(obj, parsed.getLongList(key));
+                    break;
+                case "java.lang.Byte":
+                    f.set(obj, parsed.getByteList(key));
+                    break;
+                case "java.lang.Character":
+                    f.set(obj, parsed.getCharList(key));
+                    break;
+                case "java.lang.Float":
+                    f.set(obj, parsed.getFloatList(key));
+                    break;
+                case "java.lang.Double":
+                    f.set(obj, parsed.getDoubleList(key));
+                    break;
+                case "java.lang.String":
+                    f.set(obj, parsed.getList(key));
+                    break;
 
-			if (type.compareTo("java.lang.Boolean") == 0) {
-				List<Boolean> intArr = new ArrayList<Boolean>();
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr.add(Boolean.valueOf(valArr.get(i)));
-				}
-				boolean b = f.canAccess(obj);
-				f.setAccessible(true);
-				f.set(obj, intArr);
-				f.setAccessible(b);
-				return;
-			}
-			if (type.compareTo("java.math.BigInteger") == 0) {
-				List<BigInteger> intArr = new ArrayList<BigInteger>();
-				for (int i = 0; i < valArr.size(); i++) {
-					intArr.add(ParseValueToPrimary.convertToBigInt(valArr.get(i)));
-				}
-				boolean b = f.canAccess(obj);
-				f.setAccessible(true);
-				f.set(obj, intArr);
-				f.setAccessible(b);
-				return;
-			}
-		}
-		throw new Exception("Type defined in class is not valid: " + memberType);
-	}
+                case "java.lang.Boolean":
+                    f.set(obj, parsed.getBoolList(key));
+                    break;
+                case "java.math.BigInteger":
+                    f.set(obj, parsed.getBigIntList(key));
+                    break;
+                default:
+                    throw new RuntimeException("Type defined in class is not valid: " + type + " for java.util.List");
+                }
+            } else {
+                throw new RuntimeException("Type defined in class is not valid: " + memberType + " for java.util.List");
+            }
+            f.setAccessible(b);
 
+        } catch (
+
+        Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

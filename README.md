@@ -22,7 +22,7 @@ public class Example {
 	}
 
 	public static void main(String[] args) throws Exception {
-		Arguments a = OptionParser.ParseOption(args, Arguments.class);
+		Arguments a = ParseOption(args, Arguments.class);
 		System.out.println("Print all files");
 		for (String fName : a.fileNames) {
 			System.out.println("> " + fName);
@@ -35,7 +35,7 @@ public class Example {
 ### Execution
 
 ```sh
- java -classpath "$(pwd)/target/*" com.simple.mind.optionreader.example.Example --fileNames  name.json --fileNames[ "phone.json" ] --fileNames-2 "address.json" "email-address.json" --file_names "additional.json"
+ java -classpath "$(pwd)/target/*" com.simple.mind.optionreader.example.Example --fileNames  name.json --fileNames phone.json --fileNames "address.json" "email-address.json" --file_names "additional.json"
 ```
 
 ### Result

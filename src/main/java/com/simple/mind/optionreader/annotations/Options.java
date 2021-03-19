@@ -15,7 +15,7 @@ public @interface Options {
 	 * 
 	 * @return
 	 */
-	String[] name() default {};
+	String name() default "";
 
 	/**
 	 * Optional will be set only if exists; ignored otherwise, <br>

@@ -6,149 +6,143 @@ import java.util.ArrayList;
 
 import com.simple.mind.optionreader.annotations.Options;
 
-public class AnnotationProcessor {
-	/**
-	 * Compile all available names into array, <br>
-	 * Possible names are: Field name<br>
-	 * Values set in name annotation
-	 * 
-	 * @param f
-	 * @return
-	 */
-	public static ArrayList<String> getOptionNames(Field f) {
-		ArrayList<String> t = new ArrayList<String>();
-		// add the name into the business
-		t.add(f.getName());
+class AnnotationProcessor {
+    /**
+     * Compile all available names into array, <br>
+     * Possible names are: Field name<br>
+     * Values set in name annotation
+     * 
+     * @param f
+     * @return
+     */
+    public static String getOptionNames(Field f) {
+        Options o = f.getAnnotation(Options.class);
+        if (o == null || StringFormatter.isNullOrEmpty(o.name()))
+            return f.getName();
+        return o.name();
+    }
 
-		Options o = f.getAnnotation(Options.class);
-		if (o == null) {
-			return t;
-		}
+    public static ArrayList<String> getDefaultValues(Field f) {
+        ArrayList<String> toRet = new ArrayList<String>();
+        Options o = f.getAnnotation(Options.class);
+        if (o == null)
+            return toRet;
+        for (String s : o.defaultValues())
+            toRet.add(s);
+        return toRet;
+    }
 
-		for (String n : o.name()) {
-			String pname = StringProcessor.convertFromSnake(n);
-			if (!t.contains(pname))
-				t.add(n);
-		}
-		return t;
-	}
+    public static String getDefaultSingleValue(Field f) {
+        Options o = f.getAnnotation(Options.class);
+        if (o == null)
+            return null;
+        if (o.defaultValues().length > 1)
+            throw new RuntimeException(f.getName() + " cannot have multiple default values");
+        return o.defaultValues().length == 0 ? null : o.defaultValues()[0];
+    }
 
-	public static ArrayList<String> getDefaultValues(Field f) {
-		ArrayList<String> toRet = new ArrayList<String>();
-		Options o = f.getAnnotation(Options.class);
-		if (o == null) {
-			return toRet;
-		}
-		for (String s : o.defaultValues()) {
-			toRet.add(s);
-		}
-		return toRet;
-	}
+    public static boolean isIgnorable(Field f) {
+        return isIgnorable(f.getAnnotation(Options.class));
+    }
 
-	public static boolean isIgnorable(Field f) {
-		Options o = f.getAnnotation(Options.class);
-		return isIgnorable(o);
-	}
+    public static boolean isIgnorable(Options o) {
+        if (o == null || o.ignore() == false)
+            return false;
+        return true;
+    }
 
-	public static boolean isIgnorable(Options o) {
-		if (o == null || o.ignore() == false)
-			return false;
-		return true;
-	}
+    public static boolean isOptional(Field f) {
+        Options o = f.getAnnotation(Options.class);
+        if (o == null || o.optional() == true)
+            return true;
+        return false;
+    }
 
-	public static boolean isOptional(Field f) {
-		Options o = f.getAnnotation(Options.class);
-		if (o == null || o.optional() == true)
-			return true;
-		return false;
-	}
+    public static boolean hasDefaultValue(Field f) {
+        if (f == null)
+            return false;
+        Options o = f.getAnnotation(Options.class);
+        if (o == null)
+            return false;
+        if (o.defaultValues() != null && o.defaultValues().length != 0)
+            return true;
+        return false;
+    }
 
-	public static boolean hasDefaultValue(Field f) {
-		if (f == null) {
-			return false;
-		}
-		Options o = f.getAnnotation(Options.class);
-		if (o == null)
-			return false;
-		if (o.defaultValues() != null && o.defaultValues().length != 0)
-			return true;
-		return false;
-	}
+    public static boolean checkFieldSanity(Field f, Options o) {
+        if (o == null)
+            return true;
+        // Check if multiple in single platform
+        String[] arr = o.defaultValues();
+        if (arr.length > 1 && AcceptableList.primitives.contains(f.getType().getName())) {
+            throw new RuntimeException("Expecting Single value, received multiple in default");
+        }
+        // check if duplicates
+        ArrayList<String> arl = new ArrayList<String>();
+        for (String s : arr) {
+            if (arl.contains(s)) {
+                throw new RuntimeException("Duplicates in default value: " + s);
+            }
+            arl.add(s);
+        }
+        return true;
+    }
 
-	public static boolean checkFieldSanity(Field f, Options o) throws Exception {
-		if (o == null)
-			return true;
-		// Check if multiple in single platform
-		String[] arr = o.defaultValues();
-		if (arr.length > 1 && AcceptableList.primitives.contains(f.getType().getName())) {
-			throw new Exception("Expecting Single value, received multiple in default");
-		}
-		// check if duplicates
-		ArrayList<String> arl = new ArrayList<String>();
-		for (String s : arr) {
-			if (arl.contains(s)) {
-				throw new Exception("Duplicates in default value: " + s);
-			}
-			arl.add(s);
-		}
-		return true;
-	}
+    public static boolean checkClassSanity(Class<?> z) {
+        return checkClassSanityFields(z.getDeclaredFields());
+    }
 
-	public static boolean checkClassSanity(Class<?> z) throws Exception {
-		return checkClassSanityFields(z.getDeclaredFields());
-	}
+    public static boolean checkClassSanityFields(Field[] fields) {
+        ArrayList<String> nameList = new ArrayList<String>();
+        for (Field f : fields) {
+            Options o = f.getAnnotation(Options.class);
+            // check if optional and has default value
+            if (isOptional(f) && o != null && hasDefaultValue(f)) {
+                throw new RuntimeException(
+                        "Making a variable optional and having default value is confusing. Class member: "
+                                + f.getName());
+            }
 
-	public static boolean checkClassSanityFields(Field[] fields) throws Exception {
-		ArrayList<String> nameList = new ArrayList<String>();
-		for (Field f : fields) {
-			Options o = f.getAnnotation(Options.class);
-			// check if optional and has default value
-			if (isOptional(f) && o != null && hasDefaultValue(f)) {
-				throw new Exception("Making a variable optional and having default value is confusing. Class member: "
-						+ f.getName());
-			}
+            // check if ignorable and has default value
+            if (isIgnorable(o) && o != null && o.defaultValues() != null && o.defaultValues().length != 0) {
+                throw new RuntimeException(
+                        "Making a variable ignorable and having default value is confusing. Class member: "
+                                + f.getName());
+            }
+            // check if there is duplicate name
+            String name = o == null ? null : o.name();
+            String varName = StringFormatter.formatName(f.getName());
+            if (varName.compareTo(f.getName()) != 0) {
+                throw new RuntimeException(
+                        "This tool rejects snake style variable declaration. This is not ideal; but this seems safer. Rejected variable name: "
+                                + f.getName());
+            }
+            if (nameList.contains(varName)) {
+                throw new RuntimeException("Duplicate name: " + varName
+                        + "; make sure member variable name does not conflict with other command option name");
+            } else {
+                nameList.add(varName);
+            }
 
-			// check if ignorable and has default value
-			if (isIgnorable(o) && o != null && o.defaultValues() != null && o.defaultValues().length != 0) {
-				throw new Exception("Making a variable ignorable and having default value is confusing. Class member: "
-						+ f.getName());
-			}
-			// check if there is duplicate name
-			String[] names = o == null ? null : o.name();
-			String varName = StringProcessor.convertFromSnake(f.getName());
-			if (StringProcessor.convertFromSnake(varName).compareTo(f.getName()) != 0) {
-				throw new Exception(
-						"This tool rejects snake style variable declaration. This is not ideal; but this seems safer. Rejected variable name: "
-								+ f.getName());
-			}
-			if (nameList.contains(varName)) {
-				throw new Exception("Duplicate name: " + varName
-						+ "; make sure member variable name does not conflict with other command option name");
-			} else {
-				nameList.add(varName);
-			}
-			if (names != null) {
-				for (String name : names) {
-					if (nameList.contains(name)) {
-						throw new Exception("Duplicate name: " + name
-								+ "; make sure member variable name does not conflict with other command option name");
-					} else {
-						nameList.add(name);
-					}
-				}
-			}
-			checkFieldSanity(f, o);
-		}
-		return false;
-	}
+            if (nameList.contains(name)) {
+                throw new RuntimeException("Duplicate name: " + name
+                        + "; make sure member variable name does not conflict with other command option name");
+            } else {
+                nameList.add(name);
+            }
 
-	public static String isValidListGenericType(Field f) throws Exception {
-		ParameterizedType pramType = (ParameterizedType) f.getGenericType();
-		Class<?> listGenType = (Class<?>) pramType.getActualTypeArguments()[0];
-		if (AcceptableList.primitives.contains(listGenType.getName())) {
-			return listGenType.getName();
-		}
+            checkFieldSanity(f, o);
+        }
+        return false;
+    }
 
-		throw new Exception("Invalid list Type: " + listGenType.getName());
-	}
+    public static String isValidListGenericType(Field f) {
+        ParameterizedType pramType = (ParameterizedType) f.getGenericType();
+        Class<?> listGenType = (Class<?>) pramType.getActualTypeArguments()[0];
+        if (AcceptableList.primitives.contains(listGenType.getName())) {
+            return listGenType.getName();
+        }
+
+        throw new RuntimeException("Invalid list Type: " + listGenType.getName());
+    }
 }
