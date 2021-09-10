@@ -22,7 +22,7 @@ public class Example {
 	}
 
 	public static void main(String[] args) throws Exception {
-		Arguments a = ParseOption(args, Arguments.class);
+		Arguments a = OptionsParser.parse(args, Arguments.class);
 		System.out.println("Print all files");
 		for (String fName : a.fileNames) {
 			System.out.println("> " + fName);

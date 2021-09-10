@@ -53,7 +53,7 @@ public class OptionParserTest extends TestCase {
                 "--books", "true" //
         }; //
 
-        Arguments ar = OptionsParser.ParseOption(args, Arguments.class);
+        Arguments ar = OptionsParser.parse(args, Arguments.class);
         assertEquals(ar.d2bug, true);
         assertEquals(ar.debug, true);
         assertEquals(ar.fileNames.size(), 5);
@@ -68,7 +68,7 @@ public class OptionParserTest extends TestCase {
 
     public void testFailType1() {
         try {
-            OptionsParser.ParseOption(new String[] { "--ll", "not important" }, FailType1.class);
+            OptionsParser.parse(new String[] { "--ll", "not important" }, FailType1.class);
             fail("Should not be here");
         } catch (Exception e) {
         }
@@ -80,7 +80,7 @@ public class OptionParserTest extends TestCase {
 
     public void testFailType2() {
         try {
-            OptionsParser.ParseOption(new String[] { "--ll", "not important" }, FailType1.class);
+            OptionsParser.parse(new String[] { "--ll", "not important" }, FailType1.class);
             fail("Should not be here");
         } catch (Exception e) {
         }
@@ -108,28 +108,28 @@ public class OptionParserTest extends TestCase {
 
     public void testObject() {
         try {
-            OptionsParser.ParseOption(new String[] { "--abc def" }, ClsToTest1.class);
+            OptionsParser.parse(new String[] { "--abc def" }, ClsToTest1.class);
             fail("Should not be here");
         } catch (Exception e) {
         }
 
         ClsToTest1 clsToTest1_1 = null;
-        clsToTest1_1 = OptionsParser.ParseOption(new String[] {}, ClsToTest1.class);
+        clsToTest1_1 = OptionsParser.parse(new String[] {}, ClsToTest1.class);
         assertTrue(clsToTest1_1.debug);
-        clsToTest1_1 = OptionsParser.ParseOption(new String[] { "--debug", "false" }, ClsToTest1.class);
+        clsToTest1_1 = OptionsParser.parse(new String[] { "--debug", "false" }, ClsToTest1.class);
         assertFalse(clsToTest1_1.debug);
-        clsToTest1_1 = OptionsParser.ParseOption(new String[] { "--debug", "true" }, ClsToTest1.class);
+        clsToTest1_1 = OptionsParser.parse(new String[] { "--debug", "true" }, ClsToTest1.class);
         assertTrue(clsToTest1_1.debug);
 
         try {
-            OptionsParser.ParseOption(new String[] { "--debug", "FLUE" }, ClsToTest1.class);
+            OptionsParser.parse(new String[] { "--debug", "FLUE" }, ClsToTest1.class);
             fail("Should not be here");
         } catch (Exception e) {
 
         }
 
         try {
-            OptionsParser.ParseOption(new String[] {}, ClsToTest2.class);
+            OptionsParser.parse(new String[] {}, ClsToTest2.class);
             fail("Should not be here");
         } catch (Exception e) {
 
@@ -137,7 +137,7 @@ public class OptionParserTest extends TestCase {
 
         ClsToTest4 cls4 = null;
         try {
-            cls4 = OptionsParser.ParseOption(new String[] { "--mult1", "--mult1", "--mult2", "--mult2", "true",
+            cls4 = OptionsParser.parse(new String[] { "--mult1", "--mult1", "--mult2", "--mult2", "true",
                     "--mult2", "false", "--mult3", "--mult4", "false" }, ClsToTest4.class);
             assertEquals(cls4.mult1.length, 2);
             assertTrue(cls4.mult1[0]);
@@ -155,7 +155,7 @@ public class OptionParserTest extends TestCase {
         }
 
         try {
-            cls4 = OptionsParser.ParseOption(
+            cls4 = OptionsParser.parse(
                     new String[] { "--mult1", "--mult1", "--mult2", "--mult2", "true", "--mult2", "false", "--mult3" },
                     ClsToTest4.class);
             fail("Should not be here");
@@ -177,26 +177,26 @@ public class OptionParserTest extends TestCase {
 
     public void testCheckMathValues() {
         try {
-            OptionsParser.ParseOption(new String[] { "--value2" }, CheckBigInt.class);
+            OptionsParser.parse(new String[] { "--value2" }, CheckBigInt.class);
             fail("Should not be here");
         } catch (Exception e) {
 
         }
 
         try {
-            OptionsParser.ParseOption(new String[] { "--value2", "20", "90" }, CheckBigInt.class);
+            OptionsParser.parse(new String[] { "--value2", "20", "90" }, CheckBigInt.class);
             fail("Should not be here");
         } catch (Exception e) {
         }
 
-        CheckBigInt cb1 = OptionsParser.ParseOption(
+        CheckBigInt cb1 = OptionsParser.parse(
                 new String[] { "--value1", "20", "90", "--value2", "12345678910111213141516178" }, CheckBigInt.class);
         assertEquals(cb1.value1[0], BigInteger.valueOf(20));
         assertEquals(cb1.value1[1], BigInteger.valueOf(90));
         assertEquals(cb1.value2.toString(), "12345678910111213141516178");
 
         try {
-            OptionsParser.ParseOption(new String[] {}, CheckIntegerFail.class);
+            OptionsParser.parse(new String[] {}, CheckIntegerFail.class);
             fail("Should not be here");
         } catch (Exception e) {
 
@@ -211,10 +211,10 @@ public class OptionParserTest extends TestCase {
 
     public void testIgnorable() {
 
-        OptionsParser.ParseOption(new String[] { "--x", "100" }, Ignorable.class);
+        OptionsParser.parse(new String[] { "--x", "100" }, Ignorable.class);
 
         try {
-            OptionsParser.ParseOption(new String[] { "--y", "100" }, Ignorable.class);
+            OptionsParser.parse(new String[] { "--y", "100" }, Ignorable.class);
             fail("Should not be here");
         } catch (Exception e) {
         }
@@ -229,7 +229,7 @@ public class OptionParserTest extends TestCase {
     }
 
     public void testLognSetup() {
-        LongClass lc = OptionsParser.ParseOption(new String[] { //
+        LongClass lc = OptionsParser.parse(new String[] { //
                 "--list_Obj", "1000000", //
                 "--array", "90000", //
                 "--arrayPri", "100", //
@@ -255,7 +255,7 @@ public class OptionParserTest extends TestCase {
 
     public void testStringSetup() {
 
-        StringClass lc = OptionsParser.ParseOption(new String[] { //
+        StringClass lc = OptionsParser.parse(new String[] { //
                 "--list_string", "1000000", //
                 "--arrayString", "90000", //
                 "--ff", "5000" //
@@ -278,7 +278,7 @@ public class OptionParserTest extends TestCase {
 
     public void testBooleanSetup() {
 
-        BooleanClass lc = OptionsParser.ParseOption(new String[] { //
+        BooleanClass lc = OptionsParser.parse(new String[] { //
                 "--list", "true", //
                 "--array", "false", //
                 "--ff", //
@@ -304,7 +304,7 @@ public class OptionParserTest extends TestCase {
 
     public void testBigIntSetup() {
 
-        BigIntClass lc = OptionsParser.ParseOption(new String[] { //
+        BigIntClass lc = OptionsParser.parse(new String[] { //
                 "--list", "1234", //
                 "--array", "567", //
                 "--ff", "89", //
@@ -329,7 +329,7 @@ public class OptionParserTest extends TestCase {
 
     public void testIntegerSetup() {
 
-        IntegerClass lc = OptionsParser.ParseOption(new String[] { //
+        IntegerClass lc = OptionsParser.parse(new String[] { //
                 "--list_Obj", "1000000", //
                 "--array", "90000", //
                 "--array_pri", "100", //
@@ -359,7 +359,7 @@ public class OptionParserTest extends TestCase {
 
     public void testByteSetup() {
 
-        ByteClass lc = OptionsParser.ParseOption(new String[] { //
+        ByteClass lc = OptionsParser.parse(new String[] { //
                 "--listObj", "10", //
                 "--array", "20", //
                 "--array_pri", "30", //
@@ -389,7 +389,7 @@ public class OptionParserTest extends TestCase {
 
     public void testChareSetup() {
         try {
-            CharacterClass lc = OptionsParser.ParseOption(new String[] { //
+            CharacterClass lc = OptionsParser.parse(new String[] { //
                     "--listObj", "a", //
                     "--array", "b", //
                     "--array_pri", "c", //
@@ -422,7 +422,7 @@ public class OptionParserTest extends TestCase {
 
     public void testDoubleSetup() {
 
-        DoubleClass lc = OptionsParser.ParseOption(new String[] { //
+        DoubleClass lc = OptionsParser.parse(new String[] { //
                 "--listObj", "1000.50", //
                 "--array", "230000.50", //
                 "--array_pri", "200", //
@@ -450,7 +450,7 @@ public class OptionParserTest extends TestCase {
     }
 
     public void testFloatSetup() {
-        FloatClass lc = OptionsParser.ParseOption(new String[] { //
+        FloatClass lc = OptionsParser.parse(new String[] { //
                 "--listObj", "1000.50", //
                 "--array", "230000.50", //
                 "--array_pri", "200", //
@@ -481,7 +481,7 @@ public class OptionParserTest extends TestCase {
     }
 
     public void testAllTypes() {
-        AllPrimary lc = OptionsParser.ParseOption(new String[] { //
+        AllPrimary lc = OptionsParser.parse(new String[] { //
                 "--value01", "101", //
                 "--value02", "102", //
                 "--value03", "103", //
@@ -515,7 +515,7 @@ public class OptionParserTest extends TestCase {
 
     public void testAllPrimaryArray() {
         //@formatter:off
-        AllPrimaryArray lc = OptionsParser.ParseOption(new String[] { //
+        AllPrimaryArray lc = OptionsParser.parse(new String[] { //
                 "--value01", "101", "111", //
                 "--value02", "102", "112",    "122", //
                 "--value03", "103", "113",    "123", "127", //
@@ -588,7 +588,7 @@ public class OptionParserTest extends TestCase {
     }
 
     public void testAllPrimaryObject() {
-        AllPrimaryObject lc = OptionsParser.ParseOption(new String[] { //
+        AllPrimaryObject lc = OptionsParser.parse(new String[] { //
                 "--value01", "101", //
                 "--value02", "102", //
                 "--value03", "103", //
@@ -622,7 +622,7 @@ public class OptionParserTest extends TestCase {
 
     public void testAllPrimaryObjectArray() {
         //@formatter:off
-        AllPrimaryObjectArray lc = OptionsParser.ParseOption(new String[] { //
+        AllPrimaryObjectArray lc = OptionsParser.parse(new String[] { //
                 "--value01", "101", "111", //
                 "--value02", "102", "112",    "122", //
                 "--value03", "103", "113",    "123", "127", //
@@ -705,7 +705,7 @@ public class OptionParserTest extends TestCase {
 
     public void testAllList() {
         //@formatter:off
-        AllList lc = OptionsParser.ParseOption(new String[] { //
+        AllList lc = OptionsParser.parse(new String[] { //
                 "--value01", "101", "111", //
                 "--value02", "102", "112",    "122", //
                 "--value03", "103", "113",    "123", "127", //

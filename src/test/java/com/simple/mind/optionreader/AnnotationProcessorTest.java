@@ -34,7 +34,7 @@ public class AnnotationProcessorTest extends TestCase {
 
 	public void testNameDuplicationTest() {
 		try {
-			OptionsParser.ParseOption(new String[] {}, duplicatName1.class);
+			OptionsParser.parse(new String[] {}, duplicatName1.class);
 		} catch (Exception e) {
 
 		}
